@@ -23,15 +23,15 @@ export default function App() {
             </header>
             <Tabs defaultValue="ocr">
               <TabsList>
-                <TabsTrigger value="setup">Setup</TabsTrigger>
                 <TabsTrigger value="ocr">OCR</TabsTrigger>
                 <TabsTrigger value="editor">Editor</TabsTrigger>
                 <TabsTrigger value="export">Export</TabsTrigger>
                 <TabsTrigger value="history">History</TabsTrigger>
               </TabsList>
-              <TabsContent value="setup"><SettingsPanel /></TabsContent>
               <TabsContent value="ocr">
-                <div className="space-y-4">
+                <div className="space-y-6">
+                  <SettingsPanel />
+                  <hr className="border-gray-200" />
                   <FileDrop />
                   <BatchRunner />
                   <PageList />

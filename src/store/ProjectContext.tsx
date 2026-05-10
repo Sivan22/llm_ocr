@@ -8,11 +8,14 @@ interface Ctx {
   fileName: string;
   pages: PageResult[];
   currentPageNum: number;
+  selectedPages: Set<number>;
   setProject: (args: { doc: LoadedDoc; fileHash: string; fileName: string; restored: PageResult[] }) => void;
   resetProject: () => void;
   setPage: (page: PageResult) => void;
   setPageStatus: (pageNum: number, status: Status, extra?: Partial<PageResult>) => void;
   setCurrentPageNum: (n: number) => void;
+  togglePageSelected: (n: number) => void;
+  clearSelection: () => void;
 }
 
 const ProjectCtx = createContext<Ctx | null>(null);
@@ -23,6 +26,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
   const [fileName, setFileName] = useState<string>('');
   const [pages, setPages] = useState<PageResult[]>([]);
   const [currentPageNum, setCurrentPageNum] = useState<number>(0);
+  const [selectedPages, setSelectedPages] = useState<Set<number>>(() => new Set());
 
   const ctx: Ctx = useMemo(() => ({
     loadedDoc,
@@ -30,6 +34,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     fileName,
     pages,
     currentPageNum,
+    selectedPages,
     setProject: ({ doc, fileHash, fileName, restored }) => {
       setLoadedDoc(doc);
       setFileHash(fileHash);
@@ -40,15 +45,27 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
       });
       setPages(init);
       setCurrentPageNum(0);
+      setSelectedPages(new Set());
     },
     resetProject: () => {
-      setLoadedDoc(null); setFileHash(''); setFileName(''); setPages([]); setCurrentPageNum(0);
+      setLoadedDoc(null);
+      setFileHash('');
+      setFileName('');
+      setPages([]);
+      setCurrentPageNum(0);
+      setSelectedPages(new Set());
     },
     setPage: (p) => setPages((arr) => arr.map((x) => (x.pageNum === p.pageNum ? p : x))),
     setPageStatus: (n, status, extra) =>
       setPages((arr) => arr.map((x) => (x.pageNum === n ? { ...x, status, ...extra } : x))),
     setCurrentPageNum,
-  }), [loadedDoc, fileHash, fileName, pages, currentPageNum]);
+    togglePageSelected: (n) => setSelectedPages((prev) => {
+      const next = new Set(prev);
+      if (next.has(n)) next.delete(n); else next.add(n);
+      return next;
+    }),
+    clearSelection: () => setSelectedPages(new Set()),
+  }), [loadedDoc, fileHash, fileName, pages, currentPageNum, selectedPages]);
 
   return <ProjectCtx.Provider value={ctx}>{children}</ProjectCtx.Provider>;
 }

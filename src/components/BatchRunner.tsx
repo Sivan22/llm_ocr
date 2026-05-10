@@ -9,17 +9,21 @@ import { runBatch } from '../runner/orchestrator';
 import { appendRun } from '../store/runHistory';
 import { estimateCost } from '../ai/pricing';
 import { Button } from './ui/button';
+import { Input } from './ui/input';
 
 export function BatchRunner() {
   const { settings } = useSettings();
-  const { loadedDoc, fileHash, fileName, pages, setPageStatus, setPage } = useProject();
+  const { loadedDoc, fileHash, fileName, pages, setPageStatus, setPage, selectedPages, clearSelection } = useProject();
   const [running, setRunning] = useState(false);
   const [log, setLog] = useState<string[]>([]);
   const [showLog, setShowLog] = useState(false);
+  const [rangeFrom, setRangeFrom] = useState<string>('');
+  const [rangeTo, setRangeTo] = useState<string>('');
   const abortRef = useRef<AbortController | null>(null);
 
   const eligible = pages.filter((p) => p.status !== 'ok').map((p) => p.pageNum);
   const failed = pages.filter((p) => p.status === 'error').map((p) => p.pageNum);
+  const totalPages = loadedDoc?.pageCount ?? 0;
 
   const append = (m: string) => setLog((l) => [...l, m]);
 
@@ -90,11 +94,28 @@ export function BatchRunner() {
     abortRef.current = null;
   };
 
+  const runRange = () => {
+    const fromN = Math.max(1, Number(rangeFrom || 1));
+    const toN = Math.min(totalPages, Number(rangeTo || totalPages));
+    if (!Number.isFinite(fromN) || !Number.isFinite(toN) || toN < fromN) {
+      append(`ERROR: invalid range ${rangeFrom}-${rangeTo}`);
+      return;
+    }
+    const pageNums: number[] = [];
+    for (let i = fromN - 1; i <= toN - 1; i++) pageNums.push(i);
+    start(pageNums);
+  };
+
+  const runSelected = () => {
+    if (selectedPages.size === 0) return;
+    start([...selectedPages].sort((a, b) => a - b));
+  };
+
   return (
     <div className="space-y-3">
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2 items-center">
         <Button onClick={() => start(eligible)} disabled={running || eligible.length === 0}>
-          Start ({eligible.length} pending)
+          Start all pending ({eligible.length})
         </Button>
         <Button variant="outline" onClick={() => abortRef.current?.abort()} disabled={!running}>
           Stop
@@ -103,6 +124,47 @@ export function BatchRunner() {
           Retry Failed ({failed.length})
         </Button>
       </div>
+
+      {totalPages > 0 && (
+        <div className="flex flex-wrap gap-2 items-center text-sm">
+          <span className="text-gray-600">Run pages</span>
+          <Input
+            type="number"
+            min={1}
+            max={totalPages}
+            value={rangeFrom}
+            onChange={(e) => setRangeFrom(e.target.value)}
+            placeholder="1"
+            className="w-20"
+          />
+          <span className="text-gray-600">to</span>
+          <Input
+            type="number"
+            min={1}
+            max={totalPages}
+            value={rangeTo}
+            onChange={(e) => setRangeTo(e.target.value)}
+            placeholder={String(totalPages)}
+            className="w-20"
+          />
+          <Button variant="outline" onClick={runRange} disabled={running}>
+            Run range
+          </Button>
+        </div>
+      )}
+
+      {selectedPages.size > 0 && (
+        <div className="flex flex-wrap gap-2 items-center text-sm">
+          <span className="text-gray-600">{selectedPages.size} page(s) selected</span>
+          <Button onClick={runSelected} disabled={running}>
+            Run selected
+          </Button>
+          <Button variant="outline" onClick={clearSelection} disabled={running}>
+            Clear selection
+          </Button>
+        </div>
+      )}
+
       <button className="text-xs text-blue-600 underline" onClick={() => setShowLog((s) => !s)}>
         {showLog ? 'Hide' : 'Show'} log ({log.length})
       </button>
