@@ -29,7 +29,7 @@ jobs:
 
       - run: npm run build
         env:
-          VITE_BASE: /llm_ocr_web/
+          VITE_BASE: /llm_ocr/
 
       - uses: actions/upload-pages-artifact@v3
         with:
