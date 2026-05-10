@@ -5,7 +5,7 @@ import { ocrPage } from './ocr';
 describe('ocrPage', () => {
   it('passes image + prompt to model and returns text + usage', async () => {
     const fakeModel = new MockLanguageModelV3({
-      doGenerate: async () => ({
+      doGenerate: (async () => ({
         content: [{ type: 'text' as const, text: 'דברי תורה' }],
         usage: {
           inputTokens: { total: 1500, noCache: 0, cacheRead: 0, cacheWrite: 0 },
@@ -13,7 +13,7 @@ describe('ocrPage', () => {
         },
         finishReason: 'stop' as const,
         warnings: [],
-      }),
+      })) as never,
     });
 
     const result = await ocrPage(fakeModel, 'data:image/png;base64,XXX', 'OCR this');
