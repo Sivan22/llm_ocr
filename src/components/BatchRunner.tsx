@@ -47,13 +47,9 @@ export function BatchRunner() {
       concurrency: settings.batchSize,
       signal: abortRef.current.signal,
       work: async (n, sig) => {
-        try {
-          const img = await renderPageToPng(loadedDoc, n);
-          const r = await ocrPage(model, img.dataUrl, settings.prompts.ocr, sig);
-          return { ok: true as const, value: r };
-        } catch (e) {
-          return { ok: false as const, error: e instanceof Error ? e.message : String(e) };
-        }
+        const img = await renderPageToPng(loadedDoc, n);
+        const r = await ocrPage(model, img.dataUrl, settings.prompts.ocr, sig);
+        return { ok: true as const, value: r };
       },
       onProgress: (e) => {
         processed.add(e.item);

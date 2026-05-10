@@ -97,7 +97,7 @@ export function FixPanel() {
       <h3 className="font-bold">AI Correction</h3>
       <div className="grid grid-cols-2 gap-2">
         {MODES.map((m) => (
-          <Button key={m} onClick={() => runFix(m)} disabled={running} variant={m === 'general' ? 'default' : 'outline'} className="text-xs">
+          <Button key={m} onClick={() => runFix(m)} disabled={running || (m === 'custom' && !settings.prompts.custom.trim())} variant={m === 'general' ? 'default' : 'outline'} className="text-xs">
             {MODE_LABEL[m]}
           </Button>
         ))}
