@@ -1,0 +1,60 @@
+import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import type { PageResult, Status } from '../lib/types';
+import type { LoadedDoc } from '../pdf/render';
+
+interface Ctx {
+  loadedDoc: LoadedDoc | null;
+  fileHash: string;
+  fileName: string;
+  pages: PageResult[];
+  currentPageNum: number;
+  setProject: (args: { doc: LoadedDoc; fileHash: string; fileName: string; restored: PageResult[] }) => void;
+  resetProject: () => void;
+  setPage: (page: PageResult) => void;
+  setPageStatus: (pageNum: number, status: Status, extra?: Partial<PageResult>) => void;
+  setCurrentPageNum: (n: number) => void;
+}
+
+const ProjectCtx = createContext<Ctx | null>(null);
+
+export function ProjectProvider({ children }: { children: ReactNode }) {
+  const [loadedDoc, setLoadedDoc] = useState<LoadedDoc | null>(null);
+  const [fileHash, setFileHash] = useState<string>('');
+  const [fileName, setFileName] = useState<string>('');
+  const [pages, setPages] = useState<PageResult[]>([]);
+  const [currentPageNum, setCurrentPageNum] = useState<number>(0);
+
+  const ctx: Ctx = useMemo(() => ({
+    loadedDoc,
+    fileHash,
+    fileName,
+    pages,
+    currentPageNum,
+    setProject: ({ doc, fileHash, fileName, restored }) => {
+      setLoadedDoc(doc);
+      setFileHash(fileHash);
+      setFileName(fileName);
+      const init: PageResult[] = Array.from({ length: doc.pageCount }, (_, i) => {
+        const found = restored.find((r) => r.pageNum === i);
+        return found ?? { pageNum: i, text: '', status: 'pending' as Status };
+      });
+      setPages(init);
+      setCurrentPageNum(0);
+    },
+    resetProject: () => {
+      setLoadedDoc(null); setFileHash(''); setFileName(''); setPages([]); setCurrentPageNum(0);
+    },
+    setPage: (p) => setPages((arr) => arr.map((x) => (x.pageNum === p.pageNum ? p : x))),
+    setPageStatus: (n, status, extra) =>
+      setPages((arr) => arr.map((x) => (x.pageNum === n ? { ...x, status, ...extra } : x))),
+    setCurrentPageNum,
+  }), [loadedDoc, fileHash, fileName, pages, currentPageNum]);
+
+  return <ProjectCtx.Provider value={ctx}>{children}</ProjectCtx.Provider>;
+}
+
+export function useProject(): Ctx {
+  const ctx = useContext(ProjectCtx);
+  if (!ctx) throw new Error('useProject must be used within ProjectProvider');
+  return ctx;
+}
