@@ -9,12 +9,13 @@ import { savePageResult } from '../store/persistence';
 import type { Correction, FixMode } from '../lib/types';
 import { DiffCard } from './DiffCard';
 import { Button } from './ui/button';
+import { Textarea } from './ui/textarea';
 
 const MODES: FixMode[] = ['general', 'headers', 'punctuation', 'custom'];
 const MODE_LABEL: Record<FixMode, string> = {
-  general: 'General Fix',
-  headers: 'Fix Headers',
-  punctuation: 'Fix Punctuation',
+  general: 'General',
+  headers: 'Headers',
+  punctuation: 'Punctuation',
   custom: 'Custom',
 };
 
@@ -24,22 +25,36 @@ export function FixPanel() {
   const [corrections, setCorrections] = useState<Correction[]>([]);
   const [running, setRunning] = useState(false);
   const [status, setStatus] = useState('');
+  const [prompt, setPrompt] = useState<string>(() => settings.prompts.general);
 
-  useEffect(() => { setCorrections([]); setStatus(''); }, [currentPageNum]);
+  useEffect(() => {
+    setCorrections([]);
+    setStatus('');
+  }, [currentPageNum]);
 
   const page = pages.find((p) => p.pageNum === currentPageNum);
 
-  const runFix = async (mode: FixMode) => {
+  const loadTemplate = (mode: FixMode) => {
+    setPrompt(settings.prompts[mode]);
+    setStatus(`Loaded "${MODE_LABEL[mode]}" template.`);
+  };
+
+  const run = async () => {
     if (!loadedDoc || !page) return;
-    if (!page.text.trim()) { setStatus('No text on this page yet — OCR it first.'); return; }
-    if (mode === 'custom' && !settings.prompts.custom.trim()) {
-      setStatus('Custom prompt is empty — set it in the Setup tab.'); return;
+    if (!page.text.trim()) {
+      setStatus('No text on this page yet — OCR it first.');
+      return;
     }
-    setRunning(true); setStatus(`Running ${MODE_LABEL[mode]}…`);
+    if (!prompt.trim()) {
+      setStatus('Prompt is empty.');
+      return;
+    }
+    setRunning(true);
+    setStatus('Running…');
     try {
       const model = createModel(settings);
       const img = await renderPageToPng(loadedDoc, currentPageNum);
-      const filled = substitute(settings.prompts[mode], { text: page.text });
+      const filled = substitute(prompt, { text: page.text });
       const result = await correctPage(model, img.dataUrl, filled);
       setCorrections(result);
       setStatus(result.length === 0 ? 'No corrections found.' : `Found ${result.length} correction(s).`);
@@ -95,13 +110,32 @@ export function FixPanel() {
   return (
     <div className="flex flex-col h-[70vh] space-y-2 overflow-auto">
       <h3 className="font-bold">AI Correction</h3>
-      <div className="grid grid-cols-2 gap-2">
-        {MODES.map((m) => (
-          <Button key={m} onClick={() => runFix(m)} disabled={running || (m === 'custom' && !settings.prompts.custom.trim())} variant={m === 'general' ? 'default' : 'outline'} className="text-xs">
-            {MODE_LABEL[m]}
-          </Button>
-        ))}
+      <div>
+        <div className="text-xs text-gray-500 mb-1">Load template:</div>
+        <div className="flex flex-wrap gap-1">
+          {MODES.map((m) => (
+            <Button
+              key={m}
+              onClick={() => loadTemplate(m)}
+              variant="outline"
+              className="text-xs h-7 px-2"
+              disabled={running || (m === 'custom' && !settings.prompts.custom.trim())}
+            >
+              {MODE_LABEL[m]}
+            </Button>
+          ))}
+        </div>
       </div>
+      <Textarea
+        value={prompt}
+        onChange={(e) => setPrompt(e.target.value)}
+        rows={6}
+        className="font-mono text-xs"
+        placeholder="Write your correction prompt here. Use {text} for the current page text."
+      />
+      <Button onClick={run} disabled={running || !prompt.trim()} className="text-xs">
+        {running ? 'Running…' : 'Run'}
+      </Button>
       <p className="text-xs text-gray-600">{status}</p>
       {hasPending && (
         <div className="flex gap-2">

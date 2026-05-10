@@ -78,10 +78,10 @@ export function SettingsPanel() {
       </div>
 
       <PromptEditor label="OCR Prompt" value={settings.prompts.ocr} onChange={(v) => updatePrompts({ ocr: v })} rows={5} />
-      <PromptEditor label="Fix: General" value={settings.prompts.general} onChange={(v) => updatePrompts({ general: v })} placeholderHint="{text}" />
-      <PromptEditor label="Fix: Headers" value={settings.prompts.headers} onChange={(v) => updatePrompts({ headers: v })} placeholderHint="{text}" />
-      <PromptEditor label="Fix: Punctuation" value={settings.prompts.punctuation} onChange={(v) => updatePrompts({ punctuation: v })} placeholderHint="{text}" />
-      <PromptEditor label="Fix: Custom" value={settings.prompts.custom} onChange={(v) => updatePrompts({ custom: v })} placeholderHint="{text}" />
+
+      <p className="text-xs text-gray-500">
+        Correction prompts (general / headers / punctuation / custom) are loaded as templates from the Editor tab.
+      </p>
 
       <button onClick={reset} className="text-sm text-red-600 underline">Reset all settings to defaults</button>
     </div>
