@@ -10,7 +10,7 @@ export async function mdToDocxBlob(md: string): Promise<Blob> {
       const heading = tok as Tokens.Heading;
       children.push(
         new Paragraph({
-          alignment: AlignmentType.RIGHT,
+          alignment: AlignmentType.START,
           bidirectional: true,
           heading: headingLevelFor(heading.depth),
           children: inlineRuns(heading.tokens ?? [{ type: 'text', text: heading.text, raw: heading.text } as Token]),
@@ -20,7 +20,7 @@ export async function mdToDocxBlob(md: string): Promise<Blob> {
       const para = tok as Tokens.Paragraph;
       children.push(
         new Paragraph({
-          alignment: AlignmentType.RIGHT,
+          alignment: AlignmentType.START,
           bidirectional: true,
           children: inlineRuns(para.tokens ?? []),
         }),
@@ -30,9 +30,9 @@ export async function mdToDocxBlob(md: string): Promise<Blob> {
     } else if ('text' in tok && typeof (tok as any).text === 'string') {
       children.push(
         new Paragraph({
-          alignment: AlignmentType.RIGHT,
+          alignment: AlignmentType.START,
           bidirectional: true,
-          children: [new TextRun({ text: (tok as any).text as string })],
+          children: [new TextRun({ text: decodeEntities((tok as any).text as string) })],
         }),
       );
     }
@@ -64,7 +64,7 @@ function inlineRuns(tokens: Token[]): TextRun[] {
 
 function runsForToken(t: Token, bold: boolean, italic: boolean = false): TextRun[] {
   if (t.type === 'text') {
-    return [new TextRun({ text: (t as Tokens.Text).text, bold: bold || undefined, italics: italic || undefined })];
+    return [new TextRun({ text: decodeEntities((t as Tokens.Text).text), bold: bold || undefined, italics: italic || undefined })];
   }
   if (t.type === 'strong') {
     const inner = (t as Tokens.Strong).tokens ?? [];
@@ -75,15 +75,26 @@ function runsForToken(t: Token, bold: boolean, italic: boolean = false): TextRun
     return inner.flatMap((x) => runsForToken(x, bold, true));
   }
   if (t.type === 'codespan') {
-    return [new TextRun({ text: (t as Tokens.Codespan).text, bold: bold || undefined, italics: italic || undefined })];
+    return [new TextRun({ text: decodeEntities((t as Tokens.Codespan).text), bold: bold || undefined, italics: italic || undefined })];
   }
   if (t.type === 'br') {
     return [new TextRun({ text: '', break: 1 })];
   }
   if ('raw' in t && typeof (t as any).raw === 'string') {
-    return [new TextRun({ text: (t as any).raw as string, bold: bold || undefined, italics: italic || undefined })];
+    return [new TextRun({ text: decodeEntities((t as any).raw as string), bold: bold || undefined, italics: italic || undefined })];
   }
   return [];
+}
+
+function decodeEntities(s: string): string {
+  return s
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&');
 }
 
 export function downloadBlob(blob: Blob, filename: string): void {
