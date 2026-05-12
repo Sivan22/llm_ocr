@@ -7,7 +7,7 @@ import { correctPage } from '../ai/correct';
 import { renderPageToPng } from '../pdf/render';
 import { substitute } from '../runner/prompt';
 import { savePageResult } from '../store/persistence';
-import type { Correction, FixMode } from '../lib/types';
+import type { FixMode } from '../lib/types';
 import { DiffCard } from './DiffCard';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
@@ -17,14 +17,15 @@ const MODES: FixMode[] = ['general', 'headers', 'punctuation', 'custom'];
 export function FixPanel() {
   const { settings } = useSettings();
   const { t } = useI18n();
-  const { loadedDoc, fileHash, currentPageNum, pages, setPage } = useProject();
-  const [corrections, setCorrections] = useState<Correction[]>([]);
+  const {
+    loadedDoc, fileHash, currentPageNum, pages, setPage,
+    corrections, setCorrections,
+  } = useProject();
   const [running, setRunning] = useState(false);
   const [status, setStatus] = useState('');
   const [prompt, setPrompt] = useState<string>(() => settings.prompts.general);
 
   useEffect(() => {
-    setCorrections([]);
     setStatus('');
   }, [currentPageNum]);
 
@@ -82,6 +83,24 @@ export function FixPanel() {
     setCorrections((arr) => arr.map((x) => (x.id === id ? { ...x, status: 'rejected' } : x)));
   };
 
+  const restore = (id: string) => {
+    if (!page) return;
+    const c = corrections.find((x) => x.id === id);
+    if (!c) return;
+    if (c.status === 'rejected') {
+      setCorrections((arr) => arr.map((x) => (x.id === id ? { ...x, status: 'pending' } : x)));
+      return;
+    }
+    if (c.status === 'accepted') {
+      if (!page.text.includes(c.new)) return;
+      const updatedText = page.text.replace(c.new, c.old);
+      const updated = { ...page, text: updatedText, status: 'edited' as const };
+      setPage(updated);
+      savePageResult(fileHash, updated);
+      setCorrections((arr) => arr.map((x) => (x.id === id ? { ...x, status: 'pending' } : x)));
+    }
+  };
+
   const acceptAll = () => {
     if (!page) return;
     let text = page.text;
@@ -101,7 +120,27 @@ export function FixPanel() {
     setCorrections((arr) => arr.map((c) => (c.status === 'pending' ? { ...c, status: 'rejected' } : c)));
   };
 
+  const restoreAll = () => {
+    if (!page) return;
+    let text = page.text;
+    const next = corrections.map((c) => {
+      if (c.status === 'rejected') return { ...c, status: 'pending' as const };
+      if (c.status === 'accepted') {
+        if (!text.includes(c.new)) return c;
+        text = text.replace(c.new, c.old);
+        return { ...c, status: 'pending' as const };
+      }
+      return c;
+    });
+    const updated = { ...page, text, status: 'edited' as const };
+    setPage(updated);
+    savePageResult(fileHash, updated);
+    setCorrections(next);
+  };
+
   const hasPending = corrections.some((c) => c.status === 'pending');
+  const hasResolved = corrections.some((c) => c.status !== 'pending');
+  const currentPageText = page?.text ?? '';
 
   return (
     <div className="flex flex-col h-[70vh] space-y-2 overflow-auto">
@@ -133,15 +172,27 @@ export function FixPanel() {
         {running ? t('fix.running') : t('fix.run')}
       </Button>
       <p className="text-xs text-gray-600">{status}</p>
-      {hasPending && (
-        <div className="flex gap-2">
-          <Button onClick={acceptAll} className="text-xs h-7">{t('fix.acceptAll')}</Button>
-          <Button variant="outline" onClick={rejectAll} className="text-xs h-7">{t('fix.rejectAll')}</Button>
-        </div>
-      )}
+      <div className="flex flex-wrap gap-2">
+        {hasPending && (
+          <>
+            <Button onClick={acceptAll} className="text-xs h-7">{t('fix.acceptAll')}</Button>
+            <Button variant="outline" onClick={rejectAll} className="text-xs h-7">{t('fix.rejectAll')}</Button>
+          </>
+        )}
+        {hasResolved && (
+          <Button variant="outline" onClick={restoreAll} className="text-xs h-7">{t('fix.restoreAll')}</Button>
+        )}
+      </div>
       <div className="space-y-2 flex-1 overflow-auto">
         {corrections.map((c) => (
-          <DiffCard key={c.id} correction={c} onAccept={accept} onReject={reject} />
+          <DiffCard
+            key={c.id}
+            correction={c}
+            pageText={currentPageText}
+            onAccept={accept}
+            onReject={reject}
+            onRestore={restore}
+          />
         ))}
       </div>
     </div>
