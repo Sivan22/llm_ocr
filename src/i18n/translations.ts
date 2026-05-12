@@ -123,6 +123,11 @@ const en: Dict = {
   // ErrorBoundary
   'error.title': 'Something went wrong',
   'error.reload': 'Reload',
+
+  // Footer
+  'footer.github': 'GitHub repository',
+  'footer.madeWith': 'Made with',
+  'footer.author': 'by Sivan Ratson',
 };
 
 const he: Dict = {
@@ -241,6 +246,11 @@ const he: Dict = {
   // ErrorBoundary
   'error.title': 'משהו השתבש',
   'error.reload': 'טען מחדש',
+
+  // Footer
+  'footer.github': 'מאגר GitHub',
+  'footer.madeWith': 'נוצר באהבה',
+  'footer.author': 'על ידי סיון רצון',
 };
 
 export const TRANSLATIONS: Record<Lang, Dict> = { en, he };
