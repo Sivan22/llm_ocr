@@ -71,9 +71,10 @@ const en: Dict = {
   'editor.loadFirst': 'Load a file first.',
   'editor.page': 'Page {n} / {total}',
 
-  // OcrTextarea
+  // OcrTextarea / InlineDiffEditor
   'ocr.notYet': '(not yet OCR\'d)',
   'ocr.pageStatus': 'Page {n} — {chars} chars — {status}',
+  'ocr.pageStatusDiff': 'Page {n} — {chars} chars — {status} — diff view',
   'ocr.save': 'Save Text',
 
   // PageImage
@@ -96,8 +97,14 @@ const en: Dict = {
   'fix.error': 'Error: {msg}',
   'fix.acceptAll': 'Accept All',
   'fix.rejectAll': 'Reject All',
+  'fix.restoreAll': 'Restore All',
   'fix.accept': 'Accept',
   'fix.reject': 'Reject',
+  'fix.restore': 'Restore',
+  'fix.accepted': 'Accepted',
+  'fix.rejected': 'Rejected',
+  'fix.cannotRestore': 'Text changed — cannot restore',
+  'fix.textChanged': 'text changed',
   'fix.noLongerMatches': '{reason} (no longer matches)',
   'fix.promptPlaceholder': 'Write your correction prompt here. Use {text} for the current page text.',
 
@@ -194,9 +201,10 @@ const he: Dict = {
   'editor.loadFirst': 'טען קובץ קודם.',
   'editor.page': 'עמוד {n} / {total}',
 
-  // OcrTextarea
+  // OcrTextarea / InlineDiffEditor
   'ocr.notYet': '(עדיין לא בוצע OCR)',
   'ocr.pageStatus': 'עמוד {n} — {chars} תווים — {status}',
+  'ocr.pageStatusDiff': 'עמוד {n} — {chars} תווים — {status} — תצוגת השוואה',
   'ocr.save': 'שמור טקסט',
 
   // PageImage
@@ -219,8 +227,14 @@ const he: Dict = {
   'fix.error': 'שגיאה: {msg}',
   'fix.acceptAll': 'אשר הכל',
   'fix.rejectAll': 'דחה הכל',
+  'fix.restoreAll': 'שחזר הכל',
   'fix.accept': 'אשר',
   'fix.reject': 'דחה',
+  'fix.restore': 'שחזר',
+  'fix.accepted': 'אושר',
+  'fix.rejected': 'נדחה',
+  'fix.cannotRestore': 'הטקסט שונה — לא ניתן לשחזר',
+  'fix.textChanged': 'הטקסט שונה',
   'fix.noLongerMatches': '{reason} (כבר לא תואם)',
   'fix.promptPlaceholder': 'כתוב כאן את פרומפט התיקון. השתמש ב-{text} לטקסט העמוד הנוכחי.',
 

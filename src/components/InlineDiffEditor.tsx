@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useProject } from '../store/ProjectContext';
+import { useI18n } from '../i18n/I18nContext';
 import { savePageResult } from '../store/persistence';
 import { planInlineDiff, extractEditorText, type InlineSegment } from '../lib/inlineDiff';
 import type { Correction } from '../lib/types';
@@ -20,8 +21,10 @@ const sigOf = (text: string, cs: Correction[]) =>
 
 export function InlineDiffEditor() {
   const { pages, currentPageNum, fileHash, setPage, corrections } = useProject();
+  const { t } = useI18n();
   const page = pages.find((p) => p.pageNum === currentPageNum);
   const pageText = page?.text ?? '';
+  const statusLabel = page?.status ? t(`pages.status.${page.status}`) : '—';
 
   const [dirty, setDirty] = useState(false);
   const [plainDraft, setPlainDraft] = useState(pageText);
@@ -88,13 +91,13 @@ export function InlineDiffEditor() {
           onChange={(e) => { setPlainDraft(e.target.value); setDirty(true); }}
           onBlur={() => { if (dirty) save(); }}
           className="flex-1 text-right font-serif text-base leading-relaxed"
-          placeholder={page?.status === 'pending' ? "(not yet OCR'd)" : ''}
+          placeholder={page?.status === 'pending' ? t('ocr.notYet') : ''}
         />
         <div className="flex justify-between items-center mt-2">
           <span className="text-xs text-gray-500">
-            Page {currentPageNum + 1} — {plainDraft.length} chars — {page?.status ?? '—'}
+            {t('ocr.pageStatus', { n: currentPageNum + 1, chars: plainDraft.length, status: statusLabel })}
           </span>
-          <Button onClick={save} disabled={!dirty}>Save Text</Button>
+          <Button onClick={save} disabled={!dirty}>{t('ocr.save')}</Button>
         </div>
       </div>
     );
@@ -118,9 +121,9 @@ export function InlineDiffEditor() {
       />
       <div className="flex justify-between items-center mt-2">
         <span className="text-xs text-gray-500">
-          Page {currentPageNum + 1} — {plainDraft.length} chars — {page?.status ?? '—'} — diff view
+          {t('ocr.pageStatusDiff', { n: currentPageNum + 1, chars: plainDraft.length, status: statusLabel })}
         </span>
-        <Button onClick={save} disabled={!dirty}>Save Text</Button>
+        <Button onClick={save} disabled={!dirty}>{t('ocr.save')}</Button>
       </div>
     </div>
   );

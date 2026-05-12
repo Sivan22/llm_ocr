@@ -1,7 +1,7 @@
 import { useProject } from '../store/ProjectContext';
 import { useI18n } from '../i18n/I18nContext';
 import { PageImage } from './PageImage';
-import { OcrTextarea } from './OcrTextarea';
+import { InlineDiffEditor } from './InlineDiffEditor';
 import { FixPanel } from './FixPanel';
 import { Button } from './ui/button';
 
@@ -20,7 +20,7 @@ export function EditorView() {
       </div>
       <div className="grid grid-cols-3 gap-3">
         <PageImage />
-        <OcrTextarea />
+        <InlineDiffEditor />
         <FixPanel />
       </div>
     </div>
