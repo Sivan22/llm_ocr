@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { planInlineDiff } from './inlineDiff';
+import { planInlineDiff, extractEditorText } from './inlineDiff';
 import type { Correction } from './types';
 
 const mkC = (over: Partial<Correction> & Pick<Correction, 'id' | 'old' | 'new'>): Correction => ({
@@ -68,5 +68,53 @@ describe('planInlineDiff', () => {
     const c = mkC({ id: 'c1', old: 'OLD', new: 'NEW', status: 'rejected' });
     const out = planInlineDiff(text, [c]);
     expect(out).toEqual([{ kind: 'plain', text: 'foo OLD bar' }]);
+  });
+});
+
+function renderToDom(segments: ReturnType<typeof planInlineDiff>): HTMLElement {
+  const root = document.createElement('div');
+  for (const s of segments) {
+    if (s.kind === 'plain') {
+      root.appendChild(document.createTextNode(s.text));
+      continue;
+    }
+    const span = document.createElement('span');
+    span.dataset.kind = s.kind;
+    span.dataset.cid = s.cid;
+    if (s.kind === 'ins' || s.kind === 'applied') span.setAttribute('contenteditable', 'false');
+    if (s.kind === 'ins') span.dataset.ins = 'true';
+    span.textContent = s.text;
+    root.appendChild(span);
+  }
+  return root;
+}
+
+describe('extractEditorText', () => {
+  it('returns empty string for an empty editor', () => {
+    const root = document.createElement('div');
+    expect(extractEditorText(root)).toBe('');
+  });
+
+  it('round-trips: planInlineDiff -> render -> extract === pageText', () => {
+    const text = 'before אבג after';
+    const c = mkC({ id: 'c1', old: 'אבג', new: 'אבד' });
+    const segs = planInlineDiff(text, [c]);
+    const root = renderToDom(segs);
+    expect(extractEditorText(root)).toBe(text);
+  });
+
+  it('round-trips with an accepted correction (applied span is part of underlying text)', () => {
+    const text = 'foo NEW bar';
+    const c = mkC({ id: 'c1', old: 'OLD', new: 'NEW', status: 'accepted' });
+    const segs = planInlineDiff(text, [c]);
+    const root = renderToDom(segs);
+    expect(extractEditorText(root)).toBe(text);
+  });
+
+  it('reflects edits inside plain regions', () => {
+    const segs = planInlineDiff('hello world', []);
+    const root = renderToDom(segs);
+    (root.firstChild as Text).textContent = 'hello brave world';
+    expect(extractEditorText(root)).toBe('hello brave world');
   });
 });

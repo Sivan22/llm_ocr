@@ -65,3 +65,20 @@ export function planInlineDiff(pageText: string, corrections: Correction[]): Inl
   }
   return out;
 }
+
+export function extractEditorText(root: HTMLElement): string {
+  let out = '';
+  const walk = (node: Node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      out += node.textContent ?? '';
+      return;
+    }
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const el = node as HTMLElement;
+      if (el.dataset.ins === 'true') return;
+      for (const child of Array.from(el.childNodes)) walk(child);
+    }
+  };
+  for (const child of Array.from(root.childNodes)) walk(child);
+  return out;
+}
