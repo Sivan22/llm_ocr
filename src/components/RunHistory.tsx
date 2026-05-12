@@ -1,15 +1,23 @@
 import { useEffect, useState } from 'react';
 import { loadRuns } from '../store/runHistory';
+import { useI18n } from '../i18n/I18nContext';
 import type { RunRecord } from '../lib/types';
 
 export function RunHistory() {
+  const { t } = useI18n();
   const [runs, setRuns] = useState<RunRecord[]>([]);
   useEffect(() => { setRuns(loadRuns()); }, []);
-  if (runs.length === 0) return <p className="text-sm text-gray-500">No runs yet.</p>;
+  if (runs.length === 0) return <p className="text-sm text-gray-500">{t('history.empty')}</p>;
   return (
     <table className="text-sm w-full">
       <thead className="text-left text-xs text-gray-600">
-        <tr><th>When</th><th>File</th><th>Model</th><th>OK / Fail</th><th>Cost</th></tr>
+        <tr>
+          <th>{t('history.when')}</th>
+          <th>{t('history.file')}</th>
+          <th>{t('history.model')}</th>
+          <th>{t('history.okFail')}</th>
+          <th>{t('history.cost')}</th>
+        </tr>
       </thead>
       <tbody>
         {runs.map((r) => (

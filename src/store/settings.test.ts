@@ -12,6 +12,7 @@ describe('settings store', () => {
     expect(s.route).toBe('gateway');
     expect(s.batchSize).toBeGreaterThan(0);
     expect(s.prompts.ocr).toContain('OCR');
+    expect(s.prompts.ocr).toContain('חסידות');
     expect(s.prompts.custom).toBe('');
   });
 
@@ -36,6 +37,6 @@ describe('settings store', () => {
     const s = loadSettings();
     expect(s.route).toBe('anthropic');
     expect(s.apiKeys.anthropic).toBe(''); // default
-    expect(s.prompts.ocr).toContain('OCR'); // default
+    expect(s.prompts.ocr).toContain('חסידות'); // default
   });
 });

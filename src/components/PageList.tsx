@@ -1,4 +1,5 @@
 import { useProject } from '../store/ProjectContext';
+import { useI18n } from '../i18n/I18nContext';
 import type { Status } from '../lib/types';
 import { cn } from '../lib/utils';
 
@@ -12,21 +13,23 @@ const STATUS_BG: Record<Status, string> = {
 
 export function PageList() {
   const { pages, currentPageNum, selectedPages, togglePageSelected } = useProject();
+  const { t } = useI18n();
   if (pages.length === 0) return null;
   return (
     <div className="border rounded p-2 max-h-96 overflow-auto">
       <div className="text-xs text-gray-500 mb-1">
-        Click a chip to add/remove it from the run selection.
+        {t('pages.selectHint')}
       </div>
       <div className="grid grid-cols-10 gap-1">
         {pages.map((p) => {
           const isSelected = selectedPages.has(p.pageNum);
           const isViewing = currentPageNum === p.pageNum;
+          const statusLabel = t(`pages.status.${p.status}`);
           return (
             <button
               key={p.pageNum}
               onClick={() => togglePageSelected(p.pageNum)}
-              title={p.error ?? p.status}
+              title={p.error ?? statusLabel}
               className={cn(
                 'text-xs rounded px-1 py-0.5 font-mono',
                 STATUS_BG[p.status],

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { useProject } from '../store/ProjectContext';
 import { useSettings } from '../store/SettingsContext';
+import { useI18n } from '../i18n/I18nContext';
 import { createModel } from '../ai/providers';
 import { ocrPage } from '../ai/ocr';
 import { renderPageToPng } from '../pdf/render';
@@ -13,6 +14,7 @@ import { Input } from './ui/input';
 
 export function BatchRunner() {
   const { settings } = useSettings();
+  const { t } = useI18n();
   const { loadedDoc, fileHash, fileName, pages, setPageStatus, setPage, selectedPages, clearSelection } = useProject();
   const [running, setRunning] = useState(false);
   const [log, setLog] = useState<string[]>([]);
@@ -33,7 +35,7 @@ export function BatchRunner() {
     try {
       model = createModel(settings);
     } catch (e) {
-      append(`ERROR: ${e instanceof Error ? e.message : String(e)}`);
+      append(t('batch.errorPrefix', { msg: e instanceof Error ? e.message : String(e) }));
       return;
     }
 
@@ -64,13 +66,13 @@ export function BatchRunner() {
           const result = { pageNum: e.item, text: e.value.text, status: 'ok' as const, tokensIn: e.value.tokensIn, tokensOut: e.value.tokensOut };
           setPage(result);
           savePageResult(fileHash, result);
-          append(`Page ${e.item + 1} OK (${e.value.text.length} chars)`);
+          append(t('batch.pageOk', { n: e.item + 1, chars: e.value.text.length }));
         } else {
           failCount++;
           const result = { pageNum: e.item, text: '', status: 'error' as const, error: e.error };
           setPage(result);
           savePageResult(fileHash, result);
-          append(`Page ${e.item + 1} FAILED: ${e.error}`);
+          append(t('batch.pageFailed', { n: e.item + 1, err: e.error ?? '' }));
         }
       },
     });
@@ -98,7 +100,7 @@ export function BatchRunner() {
     const fromN = Math.max(1, Number(rangeFrom || 1));
     const toN = Math.min(totalPages, Number(rangeTo || totalPages));
     if (!Number.isFinite(fromN) || !Number.isFinite(toN) || toN < fromN) {
-      append(`ERROR: invalid range ${rangeFrom}-${rangeTo}`);
+      append(t('batch.errorRange', { from: rangeFrom, to: rangeTo }));
       return;
     }
     const pageNums: number[] = [];
@@ -115,19 +117,19 @@ export function BatchRunner() {
     <div className="space-y-3">
       <div className="flex flex-wrap gap-2 items-center">
         <Button onClick={() => start(eligible)} disabled={running || eligible.length === 0}>
-          Start all pending ({eligible.length})
+          {t('batch.startAll', { n: eligible.length })}
         </Button>
         <Button variant="outline" onClick={() => abortRef.current?.abort()} disabled={!running}>
-          Stop
+          {t('batch.stop')}
         </Button>
         <Button variant="outline" onClick={() => start(failed)} disabled={running || failed.length === 0}>
-          Retry Failed ({failed.length})
+          {t('batch.retryFailed', { n: failed.length })}
         </Button>
       </div>
 
       {totalPages > 0 && (
         <div className="flex flex-wrap gap-2 items-center text-sm">
-          <span className="text-gray-600">Run pages</span>
+          <span className="text-gray-600">{t('batch.runPages')}</span>
           <Input
             type="number"
             min={1}
@@ -137,7 +139,7 @@ export function BatchRunner() {
             placeholder="1"
             className="w-20"
           />
-          <span className="text-gray-600">to</span>
+          <span className="text-gray-600">{t('batch.to')}</span>
           <Input
             type="number"
             min={1}
@@ -148,25 +150,25 @@ export function BatchRunner() {
             className="w-20"
           />
           <Button variant="outline" onClick={runRange} disabled={running}>
-            Run range
+            {t('batch.runRange')}
           </Button>
         </div>
       )}
 
       {selectedPages.size > 0 && (
         <div className="flex flex-wrap gap-2 items-center text-sm">
-          <span className="text-gray-600">{selectedPages.size} page(s) selected</span>
+          <span className="text-gray-600">{t('batch.selected', { n: selectedPages.size })}</span>
           <Button onClick={runSelected} disabled={running}>
-            Run selected
+            {t('batch.runSelected')}
           </Button>
           <Button variant="outline" onClick={clearSelection} disabled={running}>
-            Clear selection
+            {t('batch.clearSelection')}
           </Button>
         </div>
       )}
 
       <button className="text-xs text-blue-600 underline" onClick={() => setShowLog((s) => !s)}>
-        {showLog ? 'Hide' : 'Show'} log ({log.length})
+        {showLog ? t('batch.hideLog', { n: log.length }) : t('batch.showLog', { n: log.length })}
       </button>
       {showLog && (
         <pre className="bg-gray-50 border text-xs p-2 max-h-48 overflow-auto whitespace-pre-wrap">

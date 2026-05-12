@@ -3,49 +3,50 @@ import type { Settings } from '../lib/types';
 const STORAGE_KEY = 'llm_ocr_web:settings:v1';
 
 const DEFAULT_OCR_PROMPT =
-  "OCR this, this is an old jewish Chassidus book written in old Rashi script. " +
-  "it has two columns, RTL. first read the right column, then the left one. " +
-  "provide all the text ברצף, in the most accurate way possible." +
-  "omit the page numbers and page headers, only the main text. RETURN ONLY THE RAW TEXT, DO NOT RETURN ANY EXPLANATIONS OR APOLOGIES OR ANYTHING ELSE, JUST THE RAW OCR TEXT." +
-  "you can mark the inner headers (like 'פרק א') or bold words to separate them from the main text, but do not mark the page headers or page numbers. ";
+  "בצע OCR. זהו ספר חסידות יהודי ישן שנדפס בכתב רש\"י ישן. " +
+  "הספר בנוי בשני טורים מימין לשמאל. קרא תחילה את הטור הימני, ואחר כך את הטור השמאלי. " +
+  "החזר את כל הטקסט ברצף, בצורה המדויקת ביותר האפשרית. " +
+  "השמט את מספרי העמודים ואת כותרות העמוד (running headers), והחזר רק את גוף הטקסט. " +
+  "החזר אך ורק את הטקסט הגולמי, ללא הסברים, התנצלויות או כל תוספת — רק טקסט ה-OCR. " +
+  "ניתן לסמן כותרות פנימיות (כגון 'פרק א') או מילים מודגשות כדי להפרידן מהטקסט, אך אין לסמן את כותרות העמוד או את מספרי העמודים.";
 
 const DEFAULT_GENERAL_PROMPT =
-  "You are an OCR correction assistant for Hebrew text from a Chassidus book. " +
-  "Compare the OCR text below with the page image and find any OCR errors: " +
-  "wrong letters (ד/ר, ב/כ, etc.), missing/extra/merged/split words, " +
-  "line break issues, nikud problems.\n\n" +
-  "OCR Text:\n{text}\n\n" +
-  "Return ONLY a JSON array of corrections. Each correction must be an object with " +
-  '"old" (the exact incorrect text as it appears), "new" (the corrected text), ' +
-  'and "reason" (brief explanation in English). Example:\n' +
-  '[{"old": "שלומ", "new": "שלום", "reason": "wrong final letter"}]\n\n' +
-  "If no corrections are needed, return an empty array: []\n" +
-  "Return ONLY the JSON array, no markdown, no explanations.";
+  "אתה עוזר לתיקון OCR של טקסט עברי מספר חסידות. " +
+  "השווה את טקסט ה-OCR שלהלן לתמונת העמוד ואתר טעויות OCR: " +
+  "אותיות שגויות (ד/ר, ב/כ וכדומה), מילים חסרות/מיותרות/מאוחדות/מפוצלות, " +
+  "בעיות שבירת שורה ובעיות ניקוד.\n\n" +
+  "טקסט OCR:\n{text}\n\n" +
+  "החזר אך ורק מערך JSON של תיקונים. כל תיקון חייב להיות אובייקט עם " +
+  '"old" (הטקסט השגוי המדויק כפי שמופיע), "new" (הטקסט המתוקן), ' +
+  'ו-"reason" (הסבר קצר בעברית). דוגמה:\n' +
+  '[{"old": "שלומ", "new": "שלום", "reason": "אות סופית שגויה"}]\n\n' +
+  "אם אין צורך בתיקונים, החזר מערך ריק: []\n" +
+  "החזר אך ורק את מערך ה-JSON, ללא markdown וללא הסברים.";
 
 const DEFAULT_HEADERS_PROMPT =
-  "You are an OCR formatting assistant for Hebrew Chassidus text. " +
-  "Compare the OCR text below with the page image. Identify section headers, " +
-  "chapter titles (like פרק א, סימן ב), and any bold or emphasized text in the image. " +
-  "For each header found, provide the raw text as 'old' and the same text wrapped " +
-  "with **bold markers** as 'new'. Also split headers onto their own line if they are " +
-  "merged into a paragraph.\n\n" +
-  "OCR Text:\n{text}\n\n" +
-  "Return ONLY a JSON array of corrections. Each correction must be an object with " +
-  '"old" (exact text as it appears), "new" (text with header marking/separation), ' +
-  'and "reason" (e.g. "section header", "chapter title"). Example:\n' +
-  '[{"old": "פרק א בענין", "new": "**פרק א**\\nבענין", "reason": "chapter title merged into text"}]\n\n' +
-  "If no headers are found, return an empty array: []\n" +
-  "Return ONLY the JSON array, no markdown, no explanations.";
+  "אתה עוזר לעיצוב OCR של טקסט חסידות עברי. " +
+  "השווה את טקסט ה-OCR שלהלן לתמונת העמוד. אתר כותרות סעיפים, " +
+  "כותרות פרקים (כגון פרק א, סימן ב), וכל טקסט מודגש או מובלט בתמונה. " +
+  "עבור כל כותרת שנמצאה, ספק את הטקסט הגולמי בשדה 'old' ואת אותו טקסט עטוף " +
+  "בסימוני **bold** בשדה 'new'. כמו כן, הפרד כותרות לשורה משלהן אם הן " +
+  "מאוחדות לתוך פסקה.\n\n" +
+  "טקסט OCR:\n{text}\n\n" +
+  "החזר אך ורק מערך JSON של תיקונים. כל תיקון חייב להיות אובייקט עם " +
+  '"old" (הטקסט המדויק כפי שמופיע), "new" (הטקסט עם סימון/הפרדת הכותרת), ' +
+  'ו-"reason" (לדוגמה: "כותרת סעיף", "כותרת פרק"). דוגמה:\n' +
+  '[{"old": "פרק א בענין", "new": "**פרק א**\\nבענין", "reason": "כותרת פרק מאוחדת בטקסט"}]\n\n' +
+  "אם לא נמצאו כותרות, החזר מערך ריק: []\n" +
+  "החזר אך ורק את מערך ה-JSON, ללא markdown וללא הסברים.";
 
 const DEFAULT_PUNCTUATION_PROMPT =
-  "You are an OCR correction assistant for Hebrew text. Focus ONLY on punctuation issues " +
-  "in the OCR text below compared to the page image: wrong or missing punctuation marks, " +
-  "parentheses, גרשיים (quotation marks), colons, periods, commas, etc.\n\n" +
-  "OCR Text:\n{text}\n\n" +
-  "Return ONLY a JSON array of corrections. Each correction must be an object with " +
-  '"old" (exact incorrect text), "new" (corrected text), and "reason" (what punctuation issue was found).\n' +
-  "If no corrections are needed, return an empty array: []\n" +
-  "Return ONLY the JSON array, no markdown, no explanations.";
+  "אתה עוזר לתיקון OCR של טקסט עברי. התמקד אך ורק בבעיות פיסוק " +
+  "בטקסט ה-OCR שלהלן בהשוואה לתמונת העמוד: סימני פיסוק שגויים או חסרים, " +
+  "סוגריים, גרשיים, נקודתיים, נקודות, פסיקים וכדומה.\n\n" +
+  "טקסט OCR:\n{text}\n\n" +
+  "החזר אך ורק מערך JSON של תיקונים. כל תיקון חייב להיות אובייקט עם " +
+  '"old" (הטקסט השגוי המדויק), "new" (הטקסט המתוקן), ו-"reason" (איזו בעיית פיסוק נמצאה).\n' +
+  "אם אין צורך בתיקונים, החזר מערך ריק: []\n" +
+  "החזר אך ורק את מערך ה-JSON, ללא markdown וללא הסברים.";
 
 export const DEFAULT_SETTINGS: Settings = {
   version: 1,

@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useProject } from '../store/ProjectContext';
+import { useI18n } from '../i18n/I18nContext';
 import { openPdf, imagesAsDoc, combine, readFileBytes, type LoadedDoc } from '../pdf/render';
 import { sha256 } from '../pdf/hash';
 import { loadAllPageResults } from '../store/persistence';
@@ -7,6 +8,7 @@ import { cn } from '../lib/utils';
 
 export function FileDrop() {
   const { setProject, loadedDoc, fileName } = useProject();
+  const { t } = useI18n();
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,7 +49,7 @@ export function FileDrop() {
 
         doc = combine(pdfDoc, imgDoc);
       } else {
-        throw new Error('Drop one PDF, one or more images, or a PDF plus images.');
+        throw new Error(t('file.errorMixed'));
       }
 
       const concat = concatBytes(combinedBytes);
@@ -57,7 +59,7 @@ export function FileDrop() {
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
-  }, [setProject]);
+  }, [setProject, t]);
 
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault(); setIsDragging(false);
@@ -75,10 +77,10 @@ export function FileDrop() {
           isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300',
         )}
       >
-        <p className="text-gray-700">Drop a PDF or images here</p>
-        <p className="text-xs text-gray-500 mt-1">PDF, PNG, JPG, WEBP — multi-file OK</p>
+        <p className="text-gray-700">{t('file.dropHint')}</p>
+        <p className="text-xs text-gray-500 mt-1">{t('file.formatHint')}</p>
         <label className="inline-block mt-4 px-4 py-2 bg-blue-600 text-white rounded cursor-pointer">
-          Choose files
+          {t('file.choose')}
           <input
             type="file"
             multiple
@@ -89,7 +91,7 @@ export function FileDrop() {
         </label>
         {loadedDoc && (
           <p className="mt-3 text-sm text-gray-800">
-            Loaded: <strong>{fileName}</strong> ({loadedDoc.pageCount} pages)
+            {t('file.loaded', { name: fileName, n: loadedDoc.pageCount })}
           </p>
         )}
       </div>
