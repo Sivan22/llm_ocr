@@ -30,9 +30,9 @@ const en: Dict = {
     'Correction prompts (general / headers / punctuation / custom) are loaded as templates from the Editor tab.',
   'settings.reset': 'Reset all settings to defaults',
 
-  'route.anthropic': 'Anthropic (direct)',
-  'route.google': 'Google (direct)',
-  'route.openai': 'OpenAI (direct)',
+  'route.anthropic': 'Anthropic',
+  'route.google': 'Google',
+  'route.openai': 'OpenAI',
   'route.gateway': 'Vercel AI Gateway',
 
   // FileDrop
@@ -160,9 +160,9 @@ const he: Dict = {
     'פרומפטי תיקון (כללי / כותרות / פיסוק / מותאם) נטענים כתבניות מטאב העריכה.',
   'settings.reset': 'אפס את כל ההגדרות לברירת מחדל',
 
-  'route.anthropic': 'Anthropic (ישיר)',
-  'route.google': 'Google (ישיר)',
-  'route.openai': 'OpenAI (ישיר)',
+  'route.anthropic': 'Anthropic',
+  'route.google': 'Google',
+  'route.openai': 'OpenAI',
   'route.gateway': 'Vercel AI Gateway',
 
   // FileDrop
