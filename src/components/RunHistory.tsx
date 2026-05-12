@@ -10,7 +10,7 @@ export function RunHistory() {
   if (runs.length === 0) return <p className="text-sm text-gray-500">{t('history.empty')}</p>;
   return (
     <table className="text-sm w-full">
-      <thead className="text-left text-xs text-gray-600">
+      <thead className="text-start text-xs text-gray-600">
         <tr>
           <th>{t('history.when')}</th>
           <th>{t('history.file')}</th>

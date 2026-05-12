@@ -14,9 +14,10 @@ import { RunHistory } from './components/RunHistory';
 import { LanguageToggle } from './components/LanguageToggle';
 
 function AppShell() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const dir = lang === 'he' ? 'rtl' : 'ltr';
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-4">
+    <div dir={dir} className="max-w-7xl mx-auto p-6 flex flex-col gap-4 min-h-screen">
       <header className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">{t('app.title')}</h1>
         <div className="flex items-center gap-2">
@@ -24,7 +25,7 @@ function AppShell() {
           <LanguageToggle />
         </div>
       </header>
-      <Tabs defaultValue="ocr">
+      <Tabs defaultValue="ocr" dir={dir} className="flex-1">
         <TabsList>
           <TabsTrigger value="ocr">{t('tabs.ocr')}</TabsTrigger>
           <TabsTrigger value="editor">{t('tabs.editor')}</TabsTrigger>
