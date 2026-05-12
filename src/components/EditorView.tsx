@@ -1,21 +1,57 @@
+import { useEffect, useState } from 'react';
 import { useProject } from '../store/ProjectContext';
 import { useI18n } from '../i18n/I18nContext';
 import { PageImage } from './PageImage';
 import { InlineDiffEditor } from './InlineDiffEditor';
 import { FixPanel } from './FixPanel';
 import { Button } from './ui/button';
+import { Input } from './ui/input';
 
 export function EditorView() {
   const { loadedDoc, currentPageNum, setCurrentPageNum } = useProject();
   const { t } = useI18n();
+  const [pageInput, setPageInput] = useState(String(currentPageNum + 1));
+
+  useEffect(() => {
+    setPageInput(String(currentPageNum + 1));
+  }, [currentPageNum]);
+
   if (!loadedDoc) return <p className="text-gray-500">{t('editor.loadFirst')}</p>;
 
   const last = loadedDoc.pageCount - 1;
+
+  const commitPageInput = () => {
+    const parsed = parseInt(pageInput, 10);
+    if (Number.isFinite(parsed)) {
+      const clamped = Math.min(loadedDoc.pageCount, Math.max(1, parsed));
+      setCurrentPageNum(clamped - 1);
+      setPageInput(String(clamped));
+    } else {
+      setPageInput(String(currentPageNum + 1));
+    }
+  };
+
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         <Button variant="outline" disabled={currentPageNum <= 0} onClick={() => setCurrentPageNum(currentPageNum - 1)}>←</Button>
-        <span className="text-sm">{t('editor.page', { n: currentPageNum + 1, total: loadedDoc.pageCount })}</span>
+        <Input
+          type="number"
+          min={1}
+          max={loadedDoc.pageCount}
+          value={pageInput}
+          onChange={(e) => setPageInput(e.target.value)}
+          onBlur={commitPageInput}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              (e.currentTarget as HTMLInputElement).blur();
+            }
+          }}
+          className="w-20 text-center"
+          aria-label={t('editor.page', { n: currentPageNum + 1, total: loadedDoc.pageCount })}
+        />
+        <span className="text-sm text-gray-600">/ {loadedDoc.pageCount}</span>
         <Button variant="outline" disabled={currentPageNum >= last} onClick={() => setCurrentPageNum(currentPageNum + 1)}>→</Button>
       </div>
       <div className="grid grid-cols-3 gap-3">

@@ -1,5 +1,6 @@
 import type { Correction } from '../lib/types';
 import { useI18n } from '../i18n/I18nContext';
+import { useProject } from '../store/ProjectContext';
 import { cn } from '../lib/utils';
 import { Button } from './ui/button';
 
@@ -13,6 +14,8 @@ interface Props {
 
 export function DiffCard({ correction, pageText, onAccept, onReject, onRestore }: Props) {
   const { t } = useI18n();
+  const { selectedCid, selectCorrection } = useProject();
+  const isSelected = selectedCid === correction.id;
 
   const cardBg =
     correction.status === 'accepted' ? 'bg-green-50 border-green-300' :
@@ -22,8 +25,17 @@ export function DiffCard({ correction, pageText, onAccept, onReject, onRestore }
   const canRestoreAccepted =
     correction.status !== 'accepted' || pageText.includes(correction.new);
 
+  const stop = (e: React.MouseEvent) => e.stopPropagation();
+
   return (
-    <div className={cn('border rounded p-2 text-sm space-y-1', cardBg)}>
+    <div
+      onClick={() => selectCorrection(correction.id)}
+      className={cn(
+        'border rounded p-2 text-sm space-y-1 cursor-pointer transition',
+        cardBg,
+        isSelected ? 'ring-2 ring-amber-400 border-amber-400' : 'hover:border-gray-400',
+      )}
+    >
       <div dir="rtl" className="font-serif leading-relaxed">
         <span className="bg-red-100 line-through decoration-red-500 px-1 rounded">
           {correction.old}
@@ -35,13 +47,13 @@ export function DiffCard({ correction, pageText, onAccept, onReject, onRestore }
       </div>
       {correction.reason && <div className="text-xs text-gray-600">{correction.reason}</div>}
       {correction.status === 'pending' && (
-        <div className="flex gap-1">
+        <div className="flex gap-1" onClick={stop}>
           <Button onClick={() => onAccept(correction.id)} className="h-7 text-xs">{t('fix.accept')}</Button>
           <Button variant="outline" onClick={() => onReject(correction.id)} className="h-7 text-xs">{t('fix.reject')}</Button>
         </div>
       )}
       {correction.status === 'accepted' && (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" onClick={stop}>
           <span className="text-xs text-green-700">{t('fix.accepted')}</span>
           <Button
             variant="outline"
@@ -58,7 +70,7 @@ export function DiffCard({ correction, pageText, onAccept, onReject, onRestore }
         </div>
       )}
       {correction.status === 'rejected' && (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" onClick={stop}>
           <span className="text-xs text-gray-600">{t('fix.rejected')}</span>
           <Button
             variant="outline"

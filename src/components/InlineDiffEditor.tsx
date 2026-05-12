@@ -20,7 +20,7 @@ const sigOf = (text: string, cs: Correction[]) =>
   text + '|' + cs.map((c) => `${c.id}:${c.status}`).join(',');
 
 export function InlineDiffEditor() {
-  const { pages, currentPageNum, fileHash, setPage, corrections } = useProject();
+  const { pages, currentPageNum, fileHash, setPage, corrections, selectedCid, selectionTick } = useProject();
   const { t } = useI18n();
   const page = pages.find((p) => p.pageNum === currentPageNum);
   const pageText = page?.text ?? '';
@@ -73,6 +73,19 @@ export function InlineDiffEditor() {
     setPlainDraft(next);
     setDirty(true);
   };
+
+  useEffect(() => {
+    if (!selectedCid || !editorRef.current) return;
+    const root = editorRef.current;
+    const targets = root.querySelectorAll<HTMLSpanElement>(`[data-cid="${CSS.escape(selectedCid)}"]`);
+    if (targets.length === 0) return;
+    targets[0].scrollIntoView({ block: 'center', behavior: 'smooth' });
+    targets.forEach((el) => el.classList.add('cid-flash'));
+    const tid = window.setTimeout(() => {
+      targets.forEach((el) => el.classList.remove('cid-flash'));
+    }, 1400);
+    return () => window.clearTimeout(tid);
+  }, [selectedCid, selectionTick, pageText, corrections]);
 
   const save = () => {
     if (!page) return;

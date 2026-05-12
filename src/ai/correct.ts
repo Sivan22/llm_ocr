@@ -1,6 +1,14 @@
 import { generateText, type LanguageModel } from 'ai';
 import type { Correction } from '../lib/types';
 
+export const CORRECTION_SYSTEM_PROMPT =
+  'Return ONLY a JSON array of corrections. Each correction must be an object with ' +
+  '"old" (the exact incorrect text as it appears), "new" (the corrected text), and ' +
+  '"reason" (brief explanation in English). Example:\n' +
+  '[{"old": "שלומ", "new": "שלום", "reason": "wrong final letter"}]\n\n' +
+  'If no corrections are needed, return an empty array: []\n' +
+  'Return ONLY the JSON array, no markdown, no explanations.';
+
 export function parseCorrections(raw: string): Correction[] {
   let text = raw.trim();
   const fenceMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
@@ -44,6 +52,7 @@ export async function correctPage(
   const res = await generateText({
     model,
     abortSignal: signal,
+    system: CORRECTION_SYSTEM_PROMPT,
     messages: [
       {
         role: 'user',

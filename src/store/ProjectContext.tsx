@@ -10,6 +10,8 @@ interface Ctx {
   currentPageNum: number;
   selectedPages: Set<number>;
   corrections: Correction[];
+  selectedCid: string | null;
+  selectionTick: number;
   setProject: (args: { doc: LoadedDoc; fileHash: string; fileName: string; restored: PageResult[] }) => void;
   resetProject: () => void;
   setPage: (page: PageResult) => void;
@@ -18,6 +20,7 @@ interface Ctx {
   togglePageSelected: (n: number) => void;
   clearSelection: () => void;
   setCorrections: (next: Correction[] | ((prev: Correction[]) => Correction[])) => void;
+  selectCorrection: (cid: string | null) => void;
 }
 
 const ProjectCtx = createContext<Ctx | null>(null);
@@ -30,10 +33,18 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
   const [currentPageNum, setCurrentPageNumRaw] = useState<number>(0);
   const [selectedPages, setSelectedPages] = useState<Set<number>>(() => new Set());
   const [corrections, setCorrections] = useState<Correction[]>([]);
+  const [selectedCid, setSelectedCid] = useState<string | null>(null);
+  const [selectionTick, setSelectionTick] = useState<number>(0);
 
   const setCurrentPageNum = (n: number) => {
     setCurrentPageNumRaw(n);
     setCorrections([]);
+    setSelectedCid(null);
+  };
+
+  const selectCorrection = (cid: string | null) => {
+    setSelectedCid(cid);
+    setSelectionTick((x) => x + 1);
   };
 
   const ctx: Ctx = useMemo(() => ({
@@ -44,6 +55,8 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     currentPageNum,
     selectedPages,
     corrections,
+    selectedCid,
+    selectionTick,
     setProject: ({ doc, fileHash, fileName, restored }) => {
       setLoadedDoc(doc);
       setFileHash(fileHash);
@@ -56,6 +69,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
       setCurrentPageNumRaw(0);
       setSelectedPages(new Set());
       setCorrections([]);
+      setSelectedCid(null);
     },
     resetProject: () => {
       setLoadedDoc(null);
@@ -65,6 +79,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
       setCurrentPageNumRaw(0);
       setSelectedPages(new Set());
       setCorrections([]);
+      setSelectedCid(null);
     },
     setPage: (p) => setPages((arr) => arr.map((x) => (x.pageNum === p.pageNum ? p : x))),
     setPageStatus: (n, status, extra) =>
@@ -77,7 +92,8 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     }),
     clearSelection: () => setSelectedPages(new Set()),
     setCorrections,
-  }), [loadedDoc, fileHash, fileName, pages, currentPageNum, selectedPages, corrections]);
+    selectCorrection,
+  }), [loadedDoc, fileHash, fileName, pages, currentPageNum, selectedPages, corrections, selectedCid, selectionTick]);
 
   return <ProjectCtx.Provider value={ctx}>{children}</ProjectCtx.Provider>;
 }

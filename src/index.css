@@ -62,3 +62,14 @@
 html, body, #root {
   height: 100%;
 }
+
+@keyframes cid-flash-keys {
+  0%   { box-shadow: 0 0 0 2px rgba(251, 191, 36, 0); background-color: rgba(251, 191, 36, 0); }
+  20%  { box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.9); background-color: rgba(251, 191, 36, 0.35); }
+  100% { box-shadow: 0 0 0 2px rgba(251, 191, 36, 0); background-color: rgba(251, 191, 36, 0); }
+}
+
+.cid-flash {
+  animation: cid-flash-keys 1.4s ease-out;
+  border-radius: 0.25rem;
+}

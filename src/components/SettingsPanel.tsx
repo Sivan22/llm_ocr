@@ -17,6 +17,13 @@ const KEY_FIELD: Record<Route, keyof ApiKeys> = {
   gateway: 'gateway',
 };
 
+const KEY_URLS: Record<Route, string> = {
+  anthropic: 'https://console.anthropic.com/settings/keys',
+  google: 'https://aistudio.google.com/apikey',
+  openai: 'https://platform.openai.com/api-keys',
+  gateway: 'https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai-gateway%3FshowCreateKeyModal%26utm_source%3Dai_gateway_landing_page&title=Get+an+API+Key',
+};
+
 export function SettingsPanel() {
   const { settings, update, updateApiKeys, updatePrompts, reset } = useSettings();
   const { t } = useI18n();
@@ -53,7 +60,17 @@ export function SettingsPanel() {
       </div>
 
       <div>
-        <Label>{t('settings.apiKey', { provider: t(`route.${settings.route}`) })}</Label>
+        <div className="flex items-center justify-between gap-2">
+          <Label>{t('settings.apiKey', { provider: t(`route.${settings.route}`) })}</Label>
+          <a
+            href={KEY_URLS[settings.route]}
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs text-blue-600 underline-offset-2 hover:underline"
+          >
+            {t('settings.getKey')}
+          </a>
+        </div>
         <Input
           type="password"
           value={settings.apiKeys[KEY_FIELD[settings.route]]}

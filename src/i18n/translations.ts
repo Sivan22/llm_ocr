@@ -22,6 +22,7 @@ const en: Dict = {
   'settings.provider': 'Provider',
   'settings.model': 'Model',
   'settings.apiKey': 'API Key — {provider}',
+  'settings.getKey': 'Get a key ↗',
   'settings.apiKeyPlaceholder': 'paste your key here',
   'settings.apiKeyNote': "Stored in your browser's localStorage only. Never sent to a server.",
   'settings.batchSize': 'Batch Size — {n} pages in parallel',
@@ -79,6 +80,10 @@ const en: Dict = {
 
   // PageImage
   'image.rendering': 'Rendering page…',
+  'image.zoomIn': 'Zoom in',
+  'image.zoomOut': 'Zoom out',
+  'image.reset': 'Reset',
+  'image.fit': 'Fit width',
 
   // PromptEditor
   'prompt.useFor': 'Use {placeholder} for current page text',
@@ -152,6 +157,7 @@ const he: Dict = {
   'settings.provider': 'ספק',
   'settings.model': 'מודל',
   'settings.apiKey': 'מפתח API — {provider}',
+  'settings.getKey': 'קבל מפתח ↗',
   'settings.apiKeyPlaceholder': 'הדבק את המפתח כאן',
   'settings.apiKeyNote': 'נשמר רק ב-localStorage של הדפדפן שלך. לא נשלח לשרת.',
   'settings.batchSize': 'גודל אצווה — {n} עמודים במקביל',
@@ -209,6 +215,10 @@ const he: Dict = {
 
   // PageImage
   'image.rendering': 'מעבד עמוד…',
+  'image.zoomIn': 'הגדל',
+  'image.zoomOut': 'הקטן',
+  'image.reset': 'איפוס',
+  'image.fit': 'התאם לרוחב',
 
   // PromptEditor
   'prompt.useFor': 'השתמש ב-{placeholder} לטקסט העמוד הנוכחי',
