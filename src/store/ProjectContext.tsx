@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
-import type { PageResult, Status } from '../lib/types';
+import type { PageResult, Status, Correction } from '../lib/types';
 import type { LoadedDoc } from '../pdf/render';
 
 interface Ctx {
@@ -9,6 +9,7 @@ interface Ctx {
   pages: PageResult[];
   currentPageNum: number;
   selectedPages: Set<number>;
+  corrections: Correction[];
   setProject: (args: { doc: LoadedDoc; fileHash: string; fileName: string; restored: PageResult[] }) => void;
   resetProject: () => void;
   setPage: (page: PageResult) => void;
@@ -16,6 +17,7 @@ interface Ctx {
   setCurrentPageNum: (n: number) => void;
   togglePageSelected: (n: number) => void;
   clearSelection: () => void;
+  setCorrections: (next: Correction[] | ((prev: Correction[]) => Correction[])) => void;
 }
 
 const ProjectCtx = createContext<Ctx | null>(null);
@@ -25,8 +27,14 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
   const [fileHash, setFileHash] = useState<string>('');
   const [fileName, setFileName] = useState<string>('');
   const [pages, setPages] = useState<PageResult[]>([]);
-  const [currentPageNum, setCurrentPageNum] = useState<number>(0);
+  const [currentPageNum, setCurrentPageNumRaw] = useState<number>(0);
   const [selectedPages, setSelectedPages] = useState<Set<number>>(() => new Set());
+  const [corrections, setCorrections] = useState<Correction[]>([]);
+
+  const setCurrentPageNum = (n: number) => {
+    setCurrentPageNumRaw(n);
+    setCorrections([]);
+  };
 
   const ctx: Ctx = useMemo(() => ({
     loadedDoc,
@@ -35,6 +43,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     pages,
     currentPageNum,
     selectedPages,
+    corrections,
     setProject: ({ doc, fileHash, fileName, restored }) => {
       setLoadedDoc(doc);
       setFileHash(fileHash);
@@ -44,16 +53,18 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
         return found ?? { pageNum: i, text: '', status: 'pending' as Status };
       });
       setPages(init);
-      setCurrentPageNum(0);
+      setCurrentPageNumRaw(0);
       setSelectedPages(new Set());
+      setCorrections([]);
     },
     resetProject: () => {
       setLoadedDoc(null);
       setFileHash('');
       setFileName('');
       setPages([]);
-      setCurrentPageNum(0);
+      setCurrentPageNumRaw(0);
       setSelectedPages(new Set());
+      setCorrections([]);
     },
     setPage: (p) => setPages((arr) => arr.map((x) => (x.pageNum === p.pageNum ? p : x))),
     setPageStatus: (n, status, extra) =>
@@ -65,7 +76,8 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
       return next;
     }),
     clearSelection: () => setSelectedPages(new Set()),
-  }), [loadedDoc, fileHash, fileName, pages, currentPageNum, selectedPages]);
+    setCorrections,
+  }), [loadedDoc, fileHash, fileName, pages, currentPageNum, selectedPages, corrections]);
 
   return <ProjectCtx.Provider value={ctx}>{children}</ProjectCtx.Provider>;
 }
