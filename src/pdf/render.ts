@@ -53,7 +53,30 @@ export function imagesAsDoc(images: { bytes: Uint8Array; mediaType: string }[]):
   return { type: 'images', pages, pageCount: pages.length };
 }
 
-export function combine(pdf: PdfDoc, images: ImageDoc): CombinedDoc {
+export function combine(left: LoadedDoc, right: LoadedDoc): CombinedDoc {
+  if (left.type === 'stored' || right.type === 'stored') {
+    throw new Error('combine: cannot combine a stored doc');
+  }
+  const leftPdf  = left.type  === 'pdf' ? left  : left.type  === 'combined' ? left.pdf  : null;
+  const rightPdf = right.type === 'pdf' ? right : right.type === 'combined' ? right.pdf : null;
+  const leftImgs  = left.type  === 'images' ? left  : left.type  === 'combined' ? left.images  : null;
+  const rightImgs = right.type === 'images' ? right : right.type === 'combined' ? right.images : null;
+
+  if (leftPdf && rightPdf && leftPdf.pageCount > 0 && rightPdf.pageCount > 0) {
+    throw new Error('combine: cannot merge two PDF docs');
+  }
+  const pdf: PdfDoc = (leftPdf && leftPdf.pageCount > 0)
+    ? leftPdf
+    : (rightPdf && rightPdf.pageCount > 0)
+    ? rightPdf
+    : { type: 'pdf', doc: {} as unknown as PdfDoc['doc'], pageCount: 0 };
+
+  const imgs: { dataUrl: string; mediaType: string }[] = [
+    ...(leftImgs?.pages ?? []),
+    ...(rightImgs?.pages ?? []),
+  ];
+  const images: ImageDoc = { type: 'images', pages: imgs, pageCount: imgs.length };
+
   return { type: 'combined', pdf, images, pageCount: pdf.pageCount + images.pageCount };
 }
 

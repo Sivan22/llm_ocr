@@ -37,36 +37,55 @@ const en: Dict = {
   'route.gateway': 'Vercel AI Gateway',
 
   // FileDrop
-  'file.dropHint': 'Drop a PDF or images here',
-  'file.formatHint': 'PDF, PNG, JPG, WEBP — multi-file OK',
-  'file.choose': 'Choose files',
-  'file.loaded': 'Loaded: {name} ({n} pages)',
   'file.errorMixed': 'Drop one PDF, one or more images, or a PDF plus images.',
+
+  // DropZone
+  'drop.empty.title': 'Drop a PDF or images here',
+  'drop.empty.hint': 'or click anywhere to choose · PDF, PNG, JPG, WEBP — multi-file OK',
+  'drop.loaded.summary.pages': '{pages} pages',
+  'drop.loaded.summary.done': '{n} done',
+  'drop.loaded.summary.todo': '{n} to do',
+  'drop.loaded.summary.error': '{n} error',
+  'drop.loaded.appendHint': 'Drop or click to add more',
+  'drop.loaded.startOver': 'Start over',
+  'drop.loaded.startOverConfirm': 'Discard the currently loaded files and start over?',
+  'drop.disabledForStoredJob': 'Drop disabled — a saved job is open',
+
+  // SettingsToggle
+  'settings.toggle': 'Settings',
 
   // BatchRunner
   'batch.startAll': 'Start all pending ({n})',
   'batch.stop': 'Stop',
   'batch.retryFailed': 'Retry Failed ({n})',
-  'batch.runPages': 'Run pages',
-  'batch.to': 'to',
+  'batch.runPages': 'Pages',
+  'batch.range.placeholder': 'e.g. 1-3, 5, 7-9',
+  'batch.range.invalid': "Can't parse range",
   'batch.runRange': 'Run range',
-  'batch.selected': '{n} page(s) selected',
   'batch.runSelected': 'Run selected',
   'batch.clearSelection': 'Clear selection',
+  'batch.highlightInPreview': 'Highlight in preview',
+  'batch.selectedBar': '{n} pages selected',
   'batch.showLog': 'Show log ({n})',
   'batch.hideLog': 'Hide log ({n})',
   'batch.errorPrefix': 'ERROR: {msg}',
-  'batch.errorRange': 'ERROR: invalid range {from}-{to}',
   'batch.pageOk': 'Page {n} OK ({chars} chars)',
   'batch.pageFailed': 'Page {n} FAILED: {err}',
 
-  // PageList
-  'pages.selectHint': 'Click a chip to add/remove it from the run selection.',
+  // PageList / PageThumbs
   'pages.status.pending': 'pending',
   'pages.status.running': 'running',
   'pages.status.ok': 'ok',
   'pages.status.error': 'error',
   'pages.status.edited': 'edited',
+
+  // PageThumbs view modes
+  'view.grid': 'Grid',
+  'view.compact': 'Compact',
+  'view.list': 'List',
+
+  // PageThumb
+  'thumb.placeholderTooltip': 'Page image not stored',
 
   // EditorView
   'editor.loadFirst': 'Load a file first.',
@@ -189,36 +208,55 @@ const he: Dict = {
   'route.gateway': 'Vercel AI Gateway',
 
   // FileDrop
-  'file.dropHint': 'גרור לכאן PDF או תמונות',
-  'file.formatHint': 'PDF, PNG, JPG, WEBP — ניתן להעלות מספר קבצים',
-  'file.choose': 'בחר קבצים',
-  'file.loaded': 'נטען: {name} ({n} עמודים)',
   'file.errorMixed': 'גרור PDF אחד, תמונה אחת או יותר, או PDF יחד עם תמונות.',
+
+  // DropZone
+  'drop.empty.title': 'גרור לכאן PDF או תמונות',
+  'drop.empty.hint': 'או לחץ בכל מקום לבחירה · PDF, PNG, JPG, WEBP — ניתן להעלות מספר קבצים',
+  'drop.loaded.summary.pages': '{pages} עמודים',
+  'drop.loaded.summary.done': '{n} הושלמו',
+  'drop.loaded.summary.todo': '{n} ממתינים',
+  'drop.loaded.summary.error': '{n} שגיאות',
+  'drop.loaded.appendHint': 'גרור או לחץ להוספה',
+  'drop.loaded.startOver': 'התחל מחדש',
+  'drop.loaded.startOverConfirm': 'למחוק את הקבצים הטעונים ולהתחיל מחדש?',
+  'drop.disabledForStoredJob': 'גרירה לא זמינה — פתוחה עבודה שמורה',
+
+  // SettingsToggle
+  'settings.toggle': 'הגדרות',
 
   // BatchRunner
   'batch.startAll': 'הפעל את כל הממתינים ({n})',
   'batch.stop': 'עצור',
   'batch.retryFailed': 'נסה שוב כשלים ({n})',
-  'batch.runPages': 'הפעל עמודים',
-  'batch.to': 'עד',
+  'batch.runPages': 'עמודים',
+  'batch.range.placeholder': 'למשל 1-3, 5, 7-9',
+  'batch.range.invalid': 'לא ניתן לפענח את הטווח',
   'batch.runRange': 'הפעל טווח',
-  'batch.selected': '{n} עמודים נבחרו',
   'batch.runSelected': 'הפעל נבחרים',
   'batch.clearSelection': 'נקה בחירה',
+  'batch.highlightInPreview': 'סמן בתצוגה',
+  'batch.selectedBar': '{n} עמודים נבחרו',
   'batch.showLog': 'הצג יומן ({n})',
   'batch.hideLog': 'הסתר יומן ({n})',
   'batch.errorPrefix': 'שגיאה: {msg}',
-  'batch.errorRange': 'שגיאה: טווח לא תקין {from}-{to}',
   'batch.pageOk': 'עמוד {n} הושלם ({chars} תווים)',
   'batch.pageFailed': 'עמוד {n} נכשל: {err}',
 
-  // PageList
-  'pages.selectHint': 'לחץ על תווית כדי להוסיף או להסיר אותה מבחירת ההפעלה.',
+  // PageList / PageThumbs
   'pages.status.pending': 'ממתין',
   'pages.status.running': 'רץ',
   'pages.status.ok': 'הושלם',
   'pages.status.error': 'שגיאה',
   'pages.status.edited': 'נערך',
+
+  // PageThumbs view modes
+  'view.grid': 'רשת',
+  'view.compact': 'רשת צפופה',
+  'view.list': 'רשימה',
+
+  // PageThumb
+  'thumb.placeholderTooltip': 'תמונת העמוד לא נשמרה',
 
   // EditorView
   'editor.loadFirst': 'טען קובץ קודם.',

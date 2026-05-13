@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import 'fake-indexeddb/auto';
-import { upsertJob, listJobs, getJob, deleteJob, pruneJobs } from './jobs';
+import { upsertJob, listJobs, getJob, deleteJob, pruneJobs, rekeyJob } from './jobs';
 import { savePageResult, loadAllPageResults } from './persistence';
 import { saveCorrections, loadCorrections } from './correctionsStore';
 import { savePageImage, loadPageImage } from './pageImagesStore';
@@ -70,5 +70,46 @@ describe('jobs store', () => {
     await pruneJobs(2);
     const ids = (await listJobs()).map((j) => j.fileHash);
     expect(ids).toEqual([C, B]);
+  });
+});
+
+describe('rekeyJob', () => {
+  beforeEach(reset);
+
+  it('moves pageResults, corrections, pageImages from oldHash to newHash and updates the Job row', async () => {
+    await upsertJob({ fileHash: A, fileName: 'a.pdf', pageCount: 2 });
+    await savePageResult(A, { pageNum: 0, text: 'one', status: 'ok' });
+    await savePageResult(A, { pageNum: 1, text: 'two', status: 'edited' });
+    await saveCorrections(A, 0, [{ id: 'c1', old: 'a', new: 'b', reason: 'r', status: 'pending' }]);
+    await savePageImage(A, 0, { dataUrl: 'data:image/png;base64,AAA', mediaType: 'image/png' });
+
+    await rekeyJob({ oldHash: A, newHash: B, fileName: 'a+b.pdf', pageCount: 5 });
+
+    // Old hash is empty.
+    expect(await loadAllPageResults(A)).toEqual([]);
+    expect(await loadCorrections(A, 0)).toEqual([]);
+    expect(await loadPageImage(A, 0)).toBeUndefined();
+    expect(await getJob(A)).toBeUndefined();
+
+    // New hash has everything.
+    const restored = await loadAllPageResults(B);
+    expect(restored.map((p) => p.pageNum)).toEqual([0, 1]);
+    expect((await loadCorrections(B, 0)).length).toBe(1);
+    expect((await loadPageImage(B, 0))?.dataUrl).toContain('AAA');
+    const nj = await getJob(B);
+    expect(nj?.fileName).toBe('a+b.pdf');
+    expect(nj?.pageCount).toBe(5);
+  });
+
+  it('is a no-op when oldHash === newHash, only updating fileName/pageCount/lastOpenedAt', async () => {
+    await upsertJob({ fileHash: A, fileName: 'a.pdf', pageCount: 2 });
+    await savePageResult(A, { pageNum: 0, text: 'one', status: 'ok' });
+
+    await rekeyJob({ oldHash: A, newHash: A, fileName: 'a-renamed.pdf', pageCount: 3 });
+
+    const j = await getJob(A);
+    expect(j?.fileName).toBe('a-renamed.pdf');
+    expect(j?.pageCount).toBe(3);
+    expect((await loadAllPageResults(A)).length).toBe(1);
   });
 });

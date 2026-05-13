@@ -3,27 +3,33 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { I18nProvider, useI18n } from './i18n/I18nContext';
 import { SettingsProvider } from './store/SettingsContext';
-import { ProjectProvider } from './store/ProjectContext';
-import { SettingsPanel } from './components/SettingsPanel';
-import { FileDrop } from './components/FileDrop';
-import { PageList } from './components/PageList';
-import { BatchRunner } from './components/BatchRunner';
+import { ProjectProvider, useProject } from './store/ProjectContext';
 import { EditorView } from './components/EditorView';
 import { ExportPanel } from './components/ExportPanel';
-import { CostSummary } from './components/CostSummary';
 import { JobsList } from './components/JobsList';
 import { LanguageToggle } from './components/LanguageToggle';
 import { MugahPromo } from './components/MugahPromo';
+import { CostSummary } from './components/CostSummary';
+import { DropStrip } from './components/DropStrip';
+import { CollapsibleSettings } from './components/CollapsibleSettings';
+import { RunToolbar } from './components/RunToolbar';
+import { RunLog } from './components/RunLog';
+import { PageThumbs, readSavedThumbMode } from './components/PageThumbs';
+import { BatchRunnerProvider } from './hooks/useBatchRunner';
+import type { ThumbMode } from './components/PageThumb';
 
 function AppShell() {
   const { t, lang } = useI18n();
+  const { setCurrentPageNum } = useProject();
   const dir = lang === 'he' ? 'rtl' : 'ltr';
   const [tab, setTab] = useState('ocr');
+  const [thumbMode, setThumbMode] = useState<ThumbMode>(() => readSavedThumbMode());
   return (
     <div dir={dir} className="max-w-7xl mx-auto p-6 flex flex-col gap-4 min-h-screen">
       <header className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">{t('app.title')}</h1>
         <div className="flex items-center gap-2">
+          <CostSummary />
           <LanguageToggle />
           <MugahPromo />
         </div>
@@ -36,14 +42,15 @@ function AppShell() {
           <TabsTrigger value="jobs">{t('tabs.jobs')}</TabsTrigger>
         </TabsList>
         <TabsContent value="ocr">
-          <div className="space-y-6">
-            <SettingsPanel />
-            <hr className="border-gray-200" />
-            <FileDrop />
-            <BatchRunner />
-            <CostSummary />
-            <PageList />
-          </div>
+          <BatchRunnerProvider>
+            <div className="space-y-4">
+              <DropStrip />
+              <CollapsibleSettings />
+              <RunToolbar mode={thumbMode} onModeChange={setThumbMode} />
+              <PageThumbs mode={thumbMode} onOpenPage={(n) => { setCurrentPageNum(n); setTab('editor'); }} />
+              <RunLog />
+            </div>
+          </BatchRunnerProvider>
         </TabsContent>
         <TabsContent value="editor"><EditorView /></TabsContent>
         <TabsContent value="export"><ExportPanel /></TabsContent>
