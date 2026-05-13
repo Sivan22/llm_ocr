@@ -7,6 +7,7 @@ import { correctPage } from '../ai/correct';
 import { renderPageToPng } from '../pdf/render';
 import { substitute } from '../runner/prompt';
 import { savePageResult } from '../store/persistence';
+import { savePageImage } from '../store/pageImagesStore';
 import type { FixMode } from '../lib/types';
 import { DiffCard } from './DiffCard';
 import { Button } from './ui/button';
@@ -51,6 +52,7 @@ export function FixPanel() {
     try {
       const model = createModel(settings);
       const img = await renderPageToPng(loadedDoc, currentPageNum);
+      savePageImage(fileHash, currentPageNum, img);
       const filled = substitute(prompt, { text: page.text });
       const result = await correctPage(model, img.dataUrl, filled);
       setCorrections(result);
