@@ -82,7 +82,6 @@ const en: Dict = {
   'ocr.notYet': '(not yet OCR\'d)',
   'ocr.pageStatus': 'Page {n} — {chars} chars — {status}',
   'ocr.pageStatusDiff': 'Page {n} — {chars} chars — {status} — diff view',
-  'ocr.save': 'Save Text',
 
   // PageImage
   'image.rendering': 'Rendering page…',
@@ -223,7 +222,6 @@ const he: Dict = {
   'ocr.notYet': '(עדיין לא בוצע OCR)',
   'ocr.pageStatus': 'עמוד {n} — {chars} תווים — {status}',
   'ocr.pageStatusDiff': 'עמוד {n} — {chars} תווים — {status} — תצוגת השוואה',
-  'ocr.save': 'שמור טקסט',
 
   // PageImage
   'image.rendering': 'מעבד עמוד…',
