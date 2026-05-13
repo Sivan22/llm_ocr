@@ -4,6 +4,8 @@ import { useI18n } from '../i18n/I18nContext';
 import { openPdf, imagesAsDoc, combine, readFileBytes, type LoadedDoc } from '../pdf/render';
 import { sha256 } from '../pdf/hash';
 import { loadAllPageResults } from '../store/persistence';
+import { upsertJob, pruneJobs } from '../store/jobs';
+import { savePageImage } from '../store/pageImagesStore';
 import { cn } from '../lib/utils';
 
 export function FileDrop() {
@@ -56,6 +58,20 @@ export function FileDrop() {
       const fileHash = await sha256(concat);
       const restored = await loadAllPageResults(fileHash);
       setProject({ doc, fileHash, fileName: displayName, restored });
+
+      await upsertJob({ fileHash, fileName: displayName, pageCount: doc.pageCount });
+      await pruneJobs(20);
+
+      if (doc.type === 'images') {
+        await Promise.all(doc.pages.map((p, i) =>
+          savePageImage(fileHash, i, { dataUrl: p.dataUrl, mediaType: p.mediaType }),
+        ));
+      } else if (doc.type === 'combined') {
+        const offset = doc.pdf.pageCount;
+        await Promise.all(doc.images.pages.map((p, i) =>
+          savePageImage(fileHash, offset + i, { dataUrl: p.dataUrl, mediaType: p.mediaType }),
+        ));
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
