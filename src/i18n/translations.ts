@@ -71,6 +71,12 @@ const en: Dict = {
   // EditorView
   'editor.loadFirst': 'Load a file first.',
   'editor.page': 'Page {n} / {total}',
+  'editor.ocrPage': 'OCR page',
+  'editor.showPrompt': '▾ prompt',
+  'editor.hidePrompt': '▴ prompt',
+  'editor.confirmOverwrite': 'Re-run OCR will replace the current text. Continue?',
+  'editor.ocrRunning': 'Running OCR…',
+  'editor.ocrError': 'OCR error: {msg}',
 
   // OcrTextarea / InlineDiffEditor
   'ocr.notYet': '(not yet OCR\'d)',
@@ -206,6 +212,12 @@ const he: Dict = {
   // EditorView
   'editor.loadFirst': 'טען קובץ קודם.',
   'editor.page': 'עמוד {n} / {total}',
+  'editor.ocrPage': 'בצע OCR לעמוד',
+  'editor.showPrompt': '▾ פרומפט',
+  'editor.hidePrompt': '▴ פרומפט',
+  'editor.confirmOverwrite': 'הפעלת OCR מחדש תחליף את הטקסט הקיים. להמשיך?',
+  'editor.ocrRunning': 'מבצע OCR…',
+  'editor.ocrError': 'שגיאת OCR: {msg}',
 
   // OcrTextarea / InlineDiffEditor
   'ocr.notYet': '(עדיין לא בוצע OCR)',
