@@ -6,7 +6,7 @@ export interface ParsePageRangeResult {
 const TOKEN = /^\s*(\d*)\s*-\s*(\d*)\s*$|^\s*(\d+)\s*$/;
 
 export function parsePageRange(input: string, pageCount: number): ParsePageRangeResult {
-  const trimmed = input.trim();
+  const trimmed = input.trim().replace(/\s*-\s*/g, '-');
   if (trimmed === '' || pageCount <= 0) return { pages: [], error: null };
 
   const tokens = trimmed.split(/[,\s]+/).filter(Boolean);

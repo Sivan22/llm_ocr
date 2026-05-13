@@ -48,4 +48,9 @@ describe('parsePageRange', () => {
   it('pageCount of 0 yields empty result even for valid-looking input', () => {
     expect(parsePageRange('1-3', 0)).toEqual({ pages: [], error: null });
   });
+
+  it('handles spaces around the hyphen (1 - 3)', () => {
+    expect(parsePageRange('1 - 3', 10)).toEqual({ pages: [0, 1, 2], error: null });
+    expect(parsePageRange('  9   -   7  ', 10)).toEqual({ pages: [6, 7, 8], error: null });
+  });
 });
