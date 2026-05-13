@@ -87,3 +87,63 @@ export async function pruneJobs(max: number): Promise<void> {
   const drop = all.slice(max);
   for (const j of drop) await deleteJob(j.fileHash);
 }
+
+export interface RekeyJobInput {
+  oldHash: string;
+  newHash: string;
+  fileName: string;
+  pageCount: number;
+}
+
+export async function rekeyJob(input: RekeyJobInput): Promise<JobRecord> {
+  const { oldHash, newHash, fileName, pageCount } = input;
+  const d = await db();
+  const now = Date.now();
+
+  if (oldHash === newHash) {
+    const prev = (await d.get(STORE_JOBS, oldHash)) as JobRecord | undefined;
+    const next: JobRecord = {
+      fileHash: oldHash,
+      fileName,
+      pageCount,
+      createdAt: prev?.createdAt ?? now,
+      lastOpenedAt: now,
+    };
+    await d.put(STORE_JOBS, next, oldHash);
+    return next;
+  }
+
+  const tx = d.transaction(
+    [STORE_JOBS, STORE_PAGE_RESULTS, STORE_CORRECTIONS, STORE_PAGE_IMAGES],
+    'readwrite',
+  );
+
+  const jobsStore = tx.objectStore(STORE_JOBS);
+  const prev = (await jobsStore.get(oldHash)) as JobRecord | undefined;
+
+  for (const store of [STORE_PAGE_RESULTS, STORE_CORRECTIONS, STORE_PAGE_IMAGES] as const) {
+    const os = tx.objectStore(store);
+    let cur = await os.openCursor(pageRangeFor(oldHash));
+    while (cur) {
+      const oldKey = cur.key as string;
+      const suffix = oldKey.slice(oldHash.length + 1); // strip "oldHash:"
+      const newKey = `${newHash}:${suffix}`;
+      await os.put(cur.value, newKey);
+      await cur.delete();
+      cur = await cur.continue();
+    }
+  }
+
+  const next: JobRecord = {
+    fileHash: newHash,
+    fileName,
+    pageCount,
+    createdAt: prev?.createdAt ?? now,
+    lastOpenedAt: now,
+  };
+  await jobsStore.put(next, newHash);
+  await jobsStore.delete(oldHash);
+  await tx.done;
+
+  return next;
+}
