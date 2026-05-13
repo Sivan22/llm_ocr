@@ -5,7 +5,6 @@ import { savePageResult } from '../store/persistence';
 import { planInlineDiff, extractEditorText, type InlineSegment } from '../lib/inlineDiff';
 import type { Correction } from '../lib/types';
 import { Textarea } from './ui/textarea';
-import { Button } from './ui/button';
 import { cn } from '../lib/utils';
 
 const SEG_CLASS: Record<InlineSegment['kind'], string> = {
@@ -95,6 +94,17 @@ export function InlineDiffEditor() {
     setDirty(false);
   };
 
+  useEffect(() => {
+    if (!dirty || !page) return;
+    const tid = window.setTimeout(() => {
+      const updated = { ...page, text: plainDraft, status: 'edited' as const };
+      setPage(updated);
+      savePageResult(fileHash, updated);
+      setDirty(false);
+    }, 600);
+    return () => window.clearTimeout(tid);
+  }, [dirty, plainDraft, page, fileHash, setPage]);
+
   if (!hasRelevantCorrections) {
     return (
       <div className="flex flex-col h-[70vh]">
@@ -110,7 +120,6 @@ export function InlineDiffEditor() {
           <span className="text-xs text-gray-500">
             {t('ocr.pageStatus', { n: currentPageNum + 1, chars: plainDraft.length, status: statusLabel })}
           </span>
-          <Button onClick={save} disabled={!dirty}>{t('ocr.save')}</Button>
         </div>
       </div>
     );
@@ -136,7 +145,6 @@ export function InlineDiffEditor() {
         <span className="text-xs text-gray-500">
           {t('ocr.pageStatusDiff', { n: currentPageNum + 1, chars: plainDraft.length, status: statusLabel })}
         </span>
-        <Button onClick={save} disabled={!dirty}>{t('ocr.save')}</Button>
       </div>
     </div>
   );

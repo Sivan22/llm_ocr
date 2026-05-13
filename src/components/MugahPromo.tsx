@@ -26,34 +26,26 @@ export function MugahPromo() {
       href={MUGAH_URL}
       target="_blank"
       rel="noopener noreferrer"
-      aria-label="נסו את מוגה — תוסף הגהה תורנית ל-Word"
+      aria-label="Try Mugah — Torah proofreading add-in for Word"
       className="group inline-flex items-center gap-3 whitespace-nowrap rounded-lg border border-[rgba(59,130,246,0.4)] bg-[#09090b] px-4 py-2.5 text-[0.9rem] font-medium text-[#fafafa] no-underline transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:border-[#3b82f6] hover:shadow-[0_0_20px_rgba(59,130,246,0.4)]"
     >
-      <span className="flex items-baseline gap-1.5">
-        <span
-          className="bg-gradient-to-br from-[#fafafa] to-[#3b82f6] bg-clip-text font-semibold tracking-tight text-transparent"
-          style={{ fontFamily: "'Inter', sans-serif" }}
-        >
-          Mugah
-        </span>
-        <span
-          className="text-[#a1a1aa]"
-          style={{ fontFamily: "'Noto Serif Hebrew', serif" }}
-        >
-          מוגה
-        </span>
+      <span
+        className="bg-gradient-to-br from-[#fafafa] to-[#3b82f6] bg-clip-text font-semibold tracking-tight text-transparent"
+        style={{ fontFamily: "'Inter', sans-serif" }}
+      >
+        Mugah
       </span>
       <span className="text-[rgba(59,130,246,0.5)]" aria-hidden="true">
         ·
       </span>
-      <span style={{ fontFamily: "'Noto Serif Hebrew', serif" }}>
-        הגהה ל‑Word
+      <span style={{ fontFamily: "'Inter', sans-serif" }}>
+        Proofreading for Word
       </span>
       <span
-        className="transition-transform duration-300 group-hover:-translate-x-1"
+        className="transition-transform duration-300 group-hover:translate-x-1"
         aria-hidden="true"
       >
-        ←
+        →
       </span>
     </a>
   );
