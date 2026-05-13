@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createContext, useContext, useRef, useState, type ReactNode } from 'react';
 import { useProject } from '../store/ProjectContext';
 import { useSettings } from '../store/SettingsContext';
 import { useI18n } from '../i18n/I18nContext';
@@ -81,7 +81,11 @@ export function BatchRunnerProvider({ children }: { children: ReactNode }) {
     abortRef.current = null;
   };
 
-  const api: BatchRunnerApi = useMemo(() => ({
+  // Not memoized on purpose: the api closures capture `eligible`/`failed`,
+  // which can have identical lengths but different identities (e.g., one page
+  // flips ok → edited while another flips pending → error). A length-keyed
+  // memo would skip invalidating and the button would fire on stale items.
+  const api: BatchRunnerApi = {
     running,
     log,
     startAll: () => start(eligible),
@@ -91,7 +95,7 @@ export function BatchRunnerProvider({ children }: { children: ReactNode }) {
     stop: () => abortRef.current?.abort(),
     eligibleCount: eligible.length,
     failedCount: failed.length,
-  }), [running, log, eligible.length, failed.length, selectedPages, loadedDoc, fileHash]);
+  };
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;
 }

@@ -37,7 +37,6 @@ const en: Dict = {
   'route.gateway': 'Vercel AI Gateway',
 
   // FileDrop
-  'file.loaded': 'Loaded: {name} ({n} pages)',
   'file.errorMixed': 'Drop one PDF, one or more images, or a PDF plus images.',
 
   // DropZone
@@ -49,7 +48,7 @@ const en: Dict = {
   'drop.loaded.summary.error': '{n} error',
   'drop.loaded.appendHint': 'Drop or click to add more',
   'drop.loaded.startOver': 'Start over',
-  'drop.loaded.startOverConfirm': 'Files are still running. Stop and start over?',
+  'drop.loaded.startOverConfirm': 'Discard the currently loaded files and start over?',
   'drop.disabledForStoredJob': 'Drop disabled — a saved job is open',
 
   // SettingsToggle
@@ -63,7 +62,6 @@ const en: Dict = {
   'batch.range.placeholder': 'e.g. 1-3, 5, 7-9',
   'batch.range.invalid': "Can't parse range",
   'batch.runRange': 'Run range',
-  'batch.selected': '{n} page(s) selected',
   'batch.runSelected': 'Run selected',
   'batch.clearSelection': 'Clear selection',
   'batch.highlightInPreview': 'Highlight in preview',
@@ -210,7 +208,6 @@ const he: Dict = {
   'route.gateway': 'Vercel AI Gateway',
 
   // FileDrop
-  'file.loaded': 'נטען: {name} ({n} עמודים)',
   'file.errorMixed': 'גרור PDF אחד, תמונה אחת או יותר, או PDF יחד עם תמונות.',
 
   // DropZone
@@ -222,7 +219,7 @@ const he: Dict = {
   'drop.loaded.summary.error': '{n} שגיאות',
   'drop.loaded.appendHint': 'גרור או לחץ להוספה',
   'drop.loaded.startOver': 'התחל מחדש',
-  'drop.loaded.startOverConfirm': 'יש עמודים שעדיין רצים. לעצור ולהתחיל מחדש?',
+  'drop.loaded.startOverConfirm': 'למחוק את הקבצים הטעונים ולהתחיל מחדש?',
   'drop.disabledForStoredJob': 'גרירה לא זמינה — פתוחה עבודה שמורה',
 
   // SettingsToggle
@@ -236,7 +233,6 @@ const he: Dict = {
   'batch.range.placeholder': 'למשל 1-3, 5, 7-9',
   'batch.range.invalid': 'לא ניתן לפענח את הטווח',
   'batch.runRange': 'הפעל טווח',
-  'batch.selected': '{n} עמודים נבחרו',
   'batch.runSelected': 'הפעל נבחרים',
   'batch.clearSelection': 'נקה בחירה',
   'batch.highlightInPreview': 'סמן בתצוגה',

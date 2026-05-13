@@ -15,8 +15,8 @@ describe('translate', () => {
   });
 
   it('substitutes multiple placeholders', () => {
-    expect(translate('en', 'file.loaded', { name: 'book.pdf', n: 12 })).toBe(
-      'Loaded: book.pdf (12 pages)',
+    expect(translate('en', 'jobs.statusSummary', { ok: 3, edited: 1, error: 0, pending: 2 })).toBe(
+      '3 ok · 1 edited · 0 error · 2 pending',
     );
   });
 

@@ -96,9 +96,7 @@ export function DropStrip() {
   const handleClick = () => inputRef.current?.click();
   const handleStartOver = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (pages.some((p) => p.status === 'running')) {
-      if (!window.confirm(t('drop.loaded.startOverConfirm'))) return;
-    }
+    if (!window.confirm(t('drop.loaded.startOverConfirm'))) return;
     resetProject();
   };
 
@@ -137,7 +135,7 @@ export function DropStrip() {
           multiple
           accept=".pdf,image/*"
           className="hidden"
-          onChange={(e) => handleFiles(Array.from(e.target.files ?? []))}
+          onChange={(e) => { handleFiles(Array.from(e.target.files ?? [])); e.target.value = ''; }}
         />
         {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
       </div>

@@ -80,6 +80,13 @@ export function PageThumb({ page, mode, selected, viewing, onClick, onDoubleClic
     return () => { cancelled = true; observer?.disconnect(); };
   }, [fileHash, loadedDoc, page.pageNum]);
 
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClick(e as unknown as React.MouseEvent);
+    }
+  };
+
   if (mode === 'list') {
     return (
       <div
@@ -88,6 +95,7 @@ export function PageThumb({ page, mode, selected, viewing, onClick, onDoubleClic
         tabIndex={0}
         onClick={onClick}
         onDoubleClick={onDoubleClick}
+        onKeyDown={onKeyDown}
         className={cn(
           'flex items-center gap-3 px-2 py-1 rounded cursor-pointer select-none border',
           STATUS_BG[page.status],
@@ -123,6 +131,7 @@ export function PageThumb({ page, mode, selected, viewing, onClick, onDoubleClic
       tabIndex={0}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
+      onKeyDown={onKeyDown}
       title={page.error ?? t(`pages.status.${page.status}`)}
       className={cn(
         wrapperBase,
