@@ -39,6 +39,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
 
   const setCurrentPageNum = (n: number) => {
     setCurrentPageNumRaw(n);
+    setSelectedCid(null);
   };
 
   const selectCorrection = (cid: string | null) => {
