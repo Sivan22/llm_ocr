@@ -6,6 +6,7 @@ import { createModel } from '../ai/providers';
 import { ocrPage } from '../ai/ocr';
 import { renderPageToPng } from '../pdf/render';
 import { savePageResult } from '../store/persistence';
+import { savePageImage } from '../store/pageImagesStore';
 import { PageImage } from './PageImage';
 import { InlineDiffEditor } from './InlineDiffEditor';
 import { FixPanel } from './FixPanel';
@@ -67,6 +68,7 @@ export function EditorView() {
     setPageStatus(currentPageNum, 'running');
     try {
       const img = await renderPageToPng(loadedDoc, currentPageNum);
+      savePageImage(fileHash, currentPageNum, img);
       const r = await ocrPage(model, img.dataUrl, settings.prompts.ocr);
       const result = {
         pageNum: currentPageNum,
