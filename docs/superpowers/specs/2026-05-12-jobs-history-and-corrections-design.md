@@ -1,34 +1,42 @@
 # Jobs history + persistent corrections — Design
 
 **Date:** 2026-05-12
-**Scope:** Replace the per-batch-run "History" tab with a per-file "Jobs" tab. Persist all corrections (with status) per page so they survive page changes and reloads. Allow reloading a saved job from the Jobs list, using the File System Access API when available, with a re-pick fallback. Everything is stored in the browser only.
+**Scope:** Replace the per-batch-run "History" tab with a per-file "Jobs" tab. Persist all corrections (with status) per page so they survive page changes and reloads. Persist each page's rendered image so a saved job can be reopened with full editor functionality without re-picking the original file. Everything is stored in the browser only.
 
 ## Goals
 
 1. Every file the user has loaded shows up as a "job" in a Jobs tab.
-2. A job persists the file's OCR'd text (already done), all corrections per page (new, including pending/rejected status), and a reference to the original file that the browser can later re-open (new, FSA handle when available).
-3. The user can click "Reload" on a saved job to restore the full editor state — text, corrections, and (when the handle is available or the user re-picks the same file) the page images.
-4. The user can "Delete" a job; this wipes every trace of that file from the browser.
-5. No server. No PDF bytes stored. Pure browser persistence (IndexedDB).
+2. A job persists, in IndexedDB:
+   - the file's metadata (name, hash, page count),
+   - per-page OCR'd text (already done),
+   - per-page rendered image (new),
+   - per-page corrections including pending/rejected status (new).
+3. Clicking "Reload" on a saved job restores the full editor state with no file picker, no permission prompt, no need for the original file on disk.
+4. Clicking "Delete" wipes every trace of that file from the browser.
+5. No server. No PDF bytes stored. Just rendered page images + text + corrections + metadata.
 
 ## Non-goals
 
-- Storing the PDF bytes themselves.
+- Storing the original PDF bytes themselves. (We only keep what's needed to view/edit/export: the per-page images.)
 - Cross-device sync.
 - Versioned snapshots of a job over time. Each job is the latest state of one file.
 - Preserving the old per-run audit log. It is removed (the data it captured — model, cost — can be derived from per-page token counts already persisted).
+- Re-rendering pages at a different DPI after reload. We store what was rendered.
 
 ## Architecture
 
 ### Storage layout (IndexedDB)
 
-Bump database `llm_ocr_web` from `version 1` to `version 2`. After upgrade the DB has three stores:
+Bump database `llm_ocr_web` from `version 1` to `version 2`. After upgrade the DB has four stores:
 
 | Store          | Key                       | Value shape                                  | Status        |
 | -------------- | ------------------------- | -------------------------------------------- | ------------- |
 | `pageResults`  | `${fileHash}:${pageNum6}` | `PageResult`                                 | Existing      |
 | `jobs`         | `fileHash` (string)       | `JobRecord` (see below)                      | New           |
 | `corrections`  | `${fileHash}:${pageNum6}` | `Correction[]`                               | New           |
+| `pageImages`   | `${fileHash}:${pageNum6}` | `{ dataUrl: string; mediaType: string }`     | New           |
+
+`pageNum6` is zero-padded to 6 digits, same scheme as the existing `pageResults` key.
 
 ```ts
 interface JobRecord {
@@ -37,98 +45,98 @@ interface JobRecord {
   pageCount: number;
   createdAt: number;       // epoch ms
   lastOpenedAt: number;    // epoch ms
-  handle?: FileSystemFileHandle; // structured-cloneable on Chromium; absent elsewhere
 }
 ```
 
-The handle is **stored as-is**, relying on the structured clone path IDB takes for values. FSA spec guarantees handles are cloneable and durable across sessions.
-
 The old `localStorage` key `llm_ocr_web:runHistory:v1` is removed on first run after the upgrade — see Migration.
+
+### What we never store
+
+- The original PDF bytes. They are converted to per-page PNGs at render time (200 dpi default) and only those PNGs are persisted.
+- A file handle. Reload doesn't need one.
 
 ### New modules
 
 - `src/store/jobs.ts` — IDB wrapper for the `jobs` store:
-  - `upsertJob(input: { fileHash, fileName, pageCount, handle? })` — creates a row or updates `fileName`/`pageCount`/`lastOpenedAt`. Preserves an existing `handle` if the new one is missing (so a drag-and-drop reload doesn't overwrite a handle captured earlier via `showOpenFilePicker`).
+  - `upsertJob(input: { fileHash, fileName, pageCount })` — creates a row or updates `fileName`/`pageCount`/`lastOpenedAt`.
   - `listJobs(): Promise<JobRecord[]>` — sorted by `lastOpenedAt` desc.
   - `getJob(fileHash): Promise<JobRecord | undefined>`
-  - `deleteJob(fileHash): Promise<void>` — single read/write transaction across `jobs`, `pageResults`, `corrections`; deletes every key for the hash.
-  - `pruneJobs(max: number)` — keeps the newest `max` (default **50**) by `lastOpenedAt`; calls `deleteJob` on the rest.
+  - `deleteJob(fileHash): Promise<void>` — single read/write transaction across `jobs`, `pageResults`, `corrections`, `pageImages`; deletes every key for the hash.
+  - `pruneJobs(max: number)` — keeps the newest `max` by `lastOpenedAt`; calls `deleteJob` on the rest. Default **20** because images are big.
 
 - `src/store/correctionsStore.ts`:
   - `saveCorrections(fileHash, pageNum, corrections: Correction[]): Promise<void>`
   - `loadCorrections(fileHash, pageNum): Promise<Correction[]>` — returns `[]` if missing.
-  - `deleteCorrectionsForFile(fileHash)` — used inside `deleteJob`.
+
+- `src/store/pageImagesStore.ts`:
+  - `savePageImage(fileHash, pageNum, img: { dataUrl, mediaType }): Promise<void>` — best-effort; if it throws (quota), surface a warning toast but continue (text + corrections still persist).
+  - `loadPageImage(fileHash, pageNum): Promise<{ dataUrl, mediaType } | undefined>`
+  - `loadAllPageImages(fileHash): Promise<Map<number, { dataUrl, mediaType }>>` — used by `reloadJob`.
 
 - `src/store/reloadJob.ts`:
-  - `reloadJob(fileHash): Promise<ReloadResult>` orchestrates the reload flow. See "Reload flow" below.
+  - `reloadJob(fileHash)` — see "Reload flow" below.
 
 - `src/components/JobsList.tsx` — replaces the existing `RunHistory.tsx` (file deleted). Renders the Jobs table.
 
 ### Modified modules
 
-- `src/store/persistence.ts` — bump `DB_VERSION` to 2; in the upgrade callback, create `jobs` and `corrections` stores. No data migration is needed in this file.
+- `src/store/persistence.ts` — bump `DB_VERSION` to 2; in the upgrade callback, create `jobs`, `corrections`, `pageImages` stores. No data migration is needed here.
+- `src/pdf/render.ts`:
+  - Add a fourth `LoadedDoc` variant for reloaded jobs:
+    ```ts
+    interface StoredDoc {
+      type: 'stored';
+      fileHash: string;
+      pageCount: number;
+      cache: Map<number, { dataUrl: string; mediaType: string }>;
+    }
+    ```
+  - Extend `renderPageToPng` to handle `StoredDoc`: return `cache.get(pageNum)` if present, else `await loadPageImage(fileHash, pageNum)` (and cache it), else throw `MissingPageImageError`.
+  - The existing `PdfDoc` / `ImageDoc` / `CombinedDoc` paths are unchanged.
 - `src/store/ProjectContext.tsx`:
   - Remove the line in `setCurrentPageNum` that clears `corrections`.
   - Add an async effect: when `currentPageNum` or `fileHash` changes, call `loadCorrections(fileHash, currentPageNum)` and set the result.
   - Add an effect that, when `corrections` changes and `fileHash` is non-empty, calls `saveCorrections(fileHash, currentPageNum, corrections)`. Debounced ~200ms to coalesce rapid edits.
-  - Track an optional `handle: FileSystemFileHandle | null` so `FileDrop` (and reload) can pass it through.
 - `src/components/FileDrop.tsx`:
-  - When opening via the picker, use `window.showOpenFilePicker` if available (one-call API; captures a handle). Fall back to the existing hidden `<input type="file">` when not.
-  - For drag-and-drop, try `DataTransferItem.getAsFileSystemHandle()` per item (Chromium); fall back to `getAsFile()`.
-  - After hashing and `setProject`, call `upsertJob({ fileHash, fileName, pageCount, handle })`. Then `pruneJobs(50)`.
-- `src/components/BatchRunner.tsx`: remove the `appendRun` call and the `runHistory` import.
-- `src/App.tsx`: rename the `history` tab to `jobs`, render `<JobsList />` instead of `<RunHistory />`.
-- `src/i18n/*`: rename `tabs.history` → `tabs.jobs`; add strings for Jobs columns, Reload, Delete, hash-mismatch warning, "saved in your browser only" privacy note, "file no longer available" message.
+  - No FSA. No `showOpenFilePicker`. Existing file-input + drag/drop flow is unchanged.
+  - After hashing and `setProject`, call `upsertJob({ fileHash, fileName, pageCount })`. Then `pruneJobs(20)`.
+  - For image-only and combined inputs, immediately persist each image to `pageImages` (data is already in memory). For PDF inputs, persistence happens lazily as pages are rendered (see below).
+- `src/components/BatchRunner.tsx`:
+  - After `renderPageToPng` returns an image and before/after sending to the model, also `savePageImage(fileHash, n, img)`. One added line per render call.
+  - Remove the `appendRun` call and the `runHistory` import.
+- `src/components/FixPanel.tsx`:
+  - Same: after `renderPageToPng` returns, also `savePageImage(fileHash, n, img)`.
+- `src/components/PageImage.tsx` (display in editor):
+  - Calls `renderPageToPng` — already works. For `StoredDoc`, this resolves from cache/store. If `MissingPageImageError` is thrown, show a small placeholder explaining the page wasn't OCR'd before this job was reloaded.
+- `src/App.tsx`: rename the `history` tab key to `jobs`, render `<JobsList />` instead of `<RunHistory />`.
+- `src/i18n/*`: rename `tabs.history` → `tabs.jobs`; add strings for Jobs columns, Reload, Delete, "saved in your browser only" privacy note, "page image not stored" placeholder.
 - Delete `src/store/runHistory.ts`, `src/store/runHistory.test.ts`, `src/components/RunHistory.tsx`.
 
 ## Reload flow
 
-```dot
-digraph reload {
-  "Click Reload" [shape=box];
-  "getJob(fileHash)" [shape=box];
-  "Job exists?" [shape=diamond];
-  "Has handle?" [shape=diamond];
-  "queryPermission" [shape=box];
-  "Granted?" [shape=diamond];
-  "requestPermission" [shape=box];
-  "Granted after prompt?" [shape=diamond];
-  "handle.getFile + hash" [shape=box];
-  "Hash matches?" [shape=diamond];
-  "User confirms mismatch?" [shape=diamond];
-  "Re-pick prompt" [shape=box];
-  "Picked file hash matches?" [shape=diamond];
-  "setProject + switch to Editor tab" [shape=doublecircle];
-  "Abort with message" [shape=doublecircle];
+Reload is trivial now — everything we need is in IndexedDB.
 
-  "Click Reload" -> "getJob(fileHash)";
-  "getJob(fileHash)" -> "Job exists?";
-  "Job exists?" -> "Abort with message" [label="no"];
-  "Job exists?" -> "Has handle?" [label="yes"];
-  "Has handle?" -> "queryPermission" [label="yes"];
-  "Has handle?" -> "Re-pick prompt" [label="no"];
-  "queryPermission" -> "Granted?";
-  "Granted?" -> "handle.getFile + hash" [label="yes"];
-  "Granted?" -> "requestPermission" [label="prompt"];
-  "Granted?" -> "Re-pick prompt" [label="denied"];
-  "requestPermission" -> "Granted after prompt?";
-  "Granted after prompt?" -> "handle.getFile + hash" [label="yes"];
-  "Granted after prompt?" -> "Re-pick prompt" [label="no"];
-  "handle.getFile + hash" -> "Hash matches?";
-  "Hash matches?" -> "setProject + switch to Editor tab" [label="yes"];
-  "Hash matches?" -> "User confirms mismatch?" [label="no"];
-  "User confirms mismatch?" -> "setProject + switch to Editor tab" [label="yes (open as-is, treat as new fileHash)"];
-  "User confirms mismatch?" -> "Abort with message" [label="no"];
-  "Re-pick prompt" -> "Picked file hash matches?";
-  "Picked file hash matches?" -> "setProject + switch to Editor tab" [label="yes (restore existing job)"];
-  "Picked file hash matches?" -> "User confirms mismatch?" [label="no"];
+```ts
+async function reloadJob(fileHash: string, ctx: { setProject }) {
+  const job = await getJob(fileHash);
+  if (!job) throw new Error('job missing');
+  const [restored, imageMap] = await Promise.all([
+    loadAllPageResults(fileHash),
+    loadAllPageImages(fileHash),
+  ]);
+  const doc: StoredDoc = {
+    type: 'stored',
+    fileHash,
+    pageCount: job.pageCount,
+    cache: imageMap,
+  };
+  ctx.setProject({ doc, fileHash, fileName: job.fileName, restored });
+  await upsertJob({ fileHash, fileName: job.fileName, pageCount: job.pageCount }); // advances lastOpenedAt
+  // Caller switches the active tab to Editor.
 }
 ```
 
-Notes:
-- After a successful `setProject`, the reload helper also calls `upsertJob(...)` so `lastOpenedAt` advances.
-- If the user opens a file whose hash differs from the requested job, we treat it as a brand-new file (its own job row) — we never reassign saved text/corrections from one hash to another.
-- The "switch to Editor tab" step uses controlled `Tabs` state (the current `defaultValue="ocr"` becomes `value`/`onValueChange`).
+After this returns, the editor works for every page that has a stored image. Pages without one (never rendered) show the placeholder; OCR'ing them would require re-loading the PDF (a clear message, not a generic error).
 
 ## Corrections persistence
 
@@ -137,55 +145,63 @@ Notes:
 - Loading: when the user navigates to a page (or reloads a job), the array is fetched and put into context. If the array references `old`/`new` substrings no longer present in the page text (e.g., the text was edited after accepting), the rendering layer already handles this in `accept()` by marking such items rejected; no schema change needed.
 - Acceptance still calls `savePageResult` for the page text (existing behavior).
 
+## Page-image persistence
+
+- Every call to `renderPageToPng(loadedDoc, n)` in `BatchRunner` and `FixPanel` is followed by `savePageImage(fileHash, n, img)`. Best-effort: a `QuotaExceededError` is caught, logged, and shown as a non-blocking warning ("running low on storage — older jobs were pruned").
+- For image-only and combined inputs, `FileDrop` saves each input page to `pageImages` once during load (the bytes are already in hand).
+- The default storage DPI matches the render DPI used for OCR (200). Same bytes that the model saw are what gets stored — no quality loss for display.
+- Storage budget: a typical 200-dpi PNG page is ~500 KB to ~2 MB. With `pruneJobs(20)` and a typical document size, the working set stays under ~1 GB. IndexedDB quotas on modern browsers are typically 60% of free disk; this is well within limits.
+
 ## Edge cases
 
-- **No FSA support (Firefox, Safari)**: `showOpenFilePicker` is undefined; the picker uses the existing hidden file input. `handle` is `undefined`. Reload always falls through to the re-pick prompt, which still hits the same hash-match path.
-- **Handle permission revoked**: `queryPermission` may return `'prompt'` after a browser restart. The reload flow handles that by calling `requestPermission`; user denial falls through to re-pick.
-- **Handle file moved or deleted on disk**: `handle.getFile()` throws. Catch → fall through to re-pick, with a message.
-- **Hash mismatch after reload**: file was edited externally. Show a confirm dialog: "This file's contents have changed since this job was saved. Open as a new job?". Yes → load as a new job (new `fileHash`, new `JobRecord`); No → abort.
+- **Reload before any page was rendered**: `pageImages` for that hash is empty. The editor opens, every page shows the placeholder, text + corrections are still browseable, export still works (export uses text, not images).
+- **A page was OCR'd but later page-image save failed (quota)**: the editor shows the placeholder for that page, text + corrections still work. No data loss.
+- **Quota during file load (image-only)**: catch, warn, drop the page from `pageImages` (text still saves fine).
 - **Deletion of the currently open job**: `JobsList` checks `useProject().fileHash`; if equal, calls `resetProject()` after `deleteJob`.
-- **Two jobs converge on the same file**: not possible — `fileHash` is the key.
-- **Storage cap**: `pruneJobs(50)` deletes the oldest by `lastOpenedAt`. The cap is conservative; IDB has plenty of room but text + many corrections per file can add up.
+- **Two jobs converging on the same file**: not possible — `fileHash` is the key.
+- **Loading the same file again after a job was pruned**: a fresh job is created. Whatever was lost (text, corrections, images) was lost on prune.
 
 ## UI
 
 - Tab order unchanged: `OCR · Editor · Export · Jobs` (renamed from `History`).
-- Header inside the tab: short privacy note "Saved in your browser only — clear browser data to remove."
+- Header inside the Jobs tab: short privacy note "Saved in your browser only — clear browser data to remove."
 - Table columns: **File** · **Pages** · **Status** (e.g. `32 ok · 3 edited · 5 pending`) · **Cost** (sum of `estimateCost` over per-page tokens) · **Last opened** · **Actions** (Reload, Delete).
-- Empty state: existing `history.empty` string is reused as `jobs.empty`.
+- Empty state: existing `history.empty` string is renamed `jobs.empty`.
 - Delete uses `window.confirm` with the file name.
-- Reload disables the button while in flight; on failure, surfaces the error inline (a small red row under the button).
+- Reload disables the button while in flight; on failure, surfaces the error inline (a small red row under the button). It then auto-switches the active tab to **Editor** (controlled `Tabs` value in `App.tsx`).
 
 ## Testing
 
 Unit:
-- `src/store/jobs.test.ts` — upsert creates then updates `lastOpenedAt`; `listJobs` orders by recency; `deleteJob` cascades to `pageResults` and `corrections`; `pruneJobs` keeps newest N.
+- `src/store/jobs.test.ts` — upsert creates then updates `lastOpenedAt`; `listJobs` orders by recency; `deleteJob` cascades to `pageResults`, `corrections`, `pageImages`; `pruneJobs` keeps newest N.
 - `src/store/correctionsStore.test.ts` — round-trip an array including pending/accepted/rejected statuses.
-- `src/store/reloadJob.test.ts` — three branches: success (mock handle, hash match), hash-mismatch (user confirms / declines), no-handle fallback (caller-provided pick stub).
-- `src/store/persistence.test.ts` — existing tests should still pass after the v2 upgrade; add one that verifies the v1 → v2 upgrade callback runs without losing existing `pageResults`.
+- `src/store/pageImagesStore.test.ts` — round-trip a dataUrl; `loadAllPageImages` returns a map ordered correctly.
+- `src/store/reloadJob.test.ts` — happy-path reload (mock IDB returns text + images); reload with missing images returns a doc whose render throws `MissingPageImageError` for those pages.
+- `src/store/persistence.test.ts` — existing tests still pass; add one verifying the v1 → v2 upgrade callback runs without losing existing `pageResults`.
 
 Integration (manual until we wire jsdom + idb-fake):
-- Load file A, OCR a few pages, run a Fix that produces corrections, leave some pending, switch pages → come back → corrections still there.
-- Reload the page (browser reload). Reload the job from Jobs tab. On Chromium expect one permission prompt; on Firefox expect a file-picker prompt. Verify text + corrections restored.
-- Delete job → IDB row + page results + corrections gone; reloading the file produces a fresh job row.
+- Load file A, OCR pages 1-5, run Fix on page 3, leave some corrections pending → switch pages → switch tabs → corrections still there.
+- Reload the browser. Open the Jobs tab. Click Reload on the file. Verify text + corrections appear without a file picker, page 1-5 images render, pages 6+ show the placeholder.
+- Delete the job → all IDB rows gone; loading the file again produces a fresh job.
 
 ## Migration
 
-- `persistence.ts` `upgrade` callback at version 2: create stores `jobs` and `corrections` only if they don't exist. Existing `pageResults` are untouched.
-- On app startup (once), remove `localStorage.removeItem('llm_ocr_web:runHistory:v1')`. We do not attempt to synthesize Job rows from orphan `pageResults` — those rows had no `fileName`/`pageCount`. Re-opening the file recreates the job naturally.
+- `persistence.ts` `upgrade` callback at version 2: create stores `jobs`, `corrections`, `pageImages` only if they don't exist. Existing `pageResults` are untouched.
+- On app startup (once), `localStorage.removeItem('llm_ocr_web:runHistory:v1')`. We do not synthesize Job rows from orphan `pageResults` — those rows had no `fileName`/`pageCount` and no images. Re-opening the file recreates the job naturally.
 
 ## Open questions / not in scope
 
 - Renaming jobs. Out of scope; `fileName` updates if the user re-loads under a different name.
 - Exporting/importing jobs. Out of scope.
-- Server-side sync. Out of scope.
+- Storing thumbnails (lower DPI) separately from full images. Out of scope — single image per page.
 
 ## Acceptance criteria
 
 1. Loading a file creates or updates a Jobs row.
-2. Switching pages, switching tabs, and reloading the browser all preserve corrections in their last status per page.
-3. Jobs tab lists every saved file with pages/status/cost/last-opened and a working Delete.
-4. On Chromium, "Reload" restores the editor state with a single permission prompt (or none) without the user picking the file.
-5. On non-Chromium browsers, "Reload" prompts the user to pick the file; if its hash matches, the job restores; if not, the user is warned and the file is treated as a new job.
-6. Delete removes the row, the page text, and the corrections from IDB; if the deleted job was open, the editor clears.
-7. The `localStorage` `runHistory` key no longer exists; the History tab is gone; `BatchRunner` no longer writes anywhere about runs.
+2. Every page rendered by OCR or Fix has its image persisted to `pageImages`.
+3. Switching pages, switching tabs, and reloading the browser all preserve corrections in their last status per page.
+4. The Jobs tab lists every saved file with pages/status/cost/last-opened and has working Reload and Delete actions.
+5. Reload opens the editor for the chosen file with no file picker and no permission prompt; text, corrections, and previously rendered page images are restored.
+6. Pages with no stored image show a clear placeholder and do not crash the editor.
+7. Delete removes the row, the page text, the corrections, and the page images from IDB; if the deleted job was open, the editor clears.
+8. The `localStorage` `runHistory` key no longer exists; the History tab is gone; `BatchRunner` no longer writes anywhere about runs.
