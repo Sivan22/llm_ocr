@@ -69,14 +69,11 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     if (!fileHash) return;
     const key = `${fileHash}:${currentPageNum}`;
     if (hydratingForKey.current === key) {
-      // First write after hydrate marks hydration done.
+      // First write after hydrate marks hydration done; skip the echo back to IDB.
       hydratingForKey.current = '';
       return;
     }
-    const t = setTimeout(() => {
-      saveCorrections(fileHash, currentPageNum, corrections);
-    }, 200);
-    return () => clearTimeout(t);
+    saveCorrections(fileHash, currentPageNum, corrections);
   }, [fileHash, currentPageNum, corrections]);
 
   const ctx: Ctx = useMemo(() => ({
