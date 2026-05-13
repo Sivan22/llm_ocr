@@ -6,6 +6,7 @@ import { combine, imagesAsDoc, openPdf, readFileBytes } from '../pdf/render';
 import { sha256 } from '../pdf/hash';
 import { loadCorrections, saveCorrections } from './correctionsStore';
 import { rekeyJob, pruneJobs } from './jobs';
+import { concatBytes } from '../lib/bytes';
 
 interface Ctx {
   loadedDoc: LoadedDoc | null;
@@ -230,10 +231,3 @@ export function useProject(): Ctx {
   return ctx;
 }
 
-function concatBytes(arrs: Uint8Array[]): Uint8Array {
-  const total = arrs.reduce((n, a) => n + a.length, 0);
-  const out = new Uint8Array(total);
-  let off = 0;
-  for (const a of arrs) { out.set(a, off); off += a.length; }
-  return out;
-}
