@@ -1,6 +1,7 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { PageResult, Status, Correction } from '../lib/types';
 import type { LoadedDoc } from '../pdf/render';
+import { loadCorrections, saveCorrections } from './correctionsStore';
 
 interface Ctx {
   loadedDoc: LoadedDoc | null;
@@ -38,14 +39,44 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
 
   const setCurrentPageNum = (n: number) => {
     setCurrentPageNumRaw(n);
-    setCorrections([]);
-    setSelectedCid(null);
   };
 
   const selectCorrection = (cid: string | null) => {
     setSelectedCid(cid);
     setSelectionTick((x) => x + 1);
   };
+
+  const hydratingForKey = useRef<string>('');
+
+  useEffect(() => {
+    if (!fileHash) {
+      setCorrections([]);
+      return;
+    }
+    const key = `${fileHash}:${currentPageNum}`;
+    hydratingForKey.current = key;
+    let cancelled = false;
+    loadCorrections(fileHash, currentPageNum).then((arr) => {
+      if (cancelled) return;
+      if (hydratingForKey.current !== key) return;
+      setCorrections(arr);
+    });
+    return () => { cancelled = true; };
+  }, [fileHash, currentPageNum]);
+
+  useEffect(() => {
+    if (!fileHash) return;
+    const key = `${fileHash}:${currentPageNum}`;
+    if (hydratingForKey.current === key) {
+      // First write after hydrate marks hydration done.
+      hydratingForKey.current = '';
+      return;
+    }
+    const t = setTimeout(() => {
+      saveCorrections(fileHash, currentPageNum, corrections);
+    }, 200);
+    return () => clearTimeout(t);
+  }, [fileHash, currentPageNum, corrections]);
 
   const ctx: Ctx = useMemo(() => ({
     loadedDoc,
@@ -68,7 +99,6 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
       setPages(init);
       setCurrentPageNumRaw(0);
       setSelectedPages(new Set());
-      setCorrections([]);
       setSelectedCid(null);
     },
     resetProject: () => {
@@ -78,7 +108,6 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
       setPages([]);
       setCurrentPageNumRaw(0);
       setSelectedPages(new Set());
-      setCorrections([]);
       setSelectedCid(null);
     },
     setPage: (p) => setPages((arr) => arr.map((x) => (x.pageNum === p.pageNum ? p : x))),
