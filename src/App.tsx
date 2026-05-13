@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { I18nProvider, useI18n } from './i18n/I18nContext';
@@ -10,13 +11,14 @@ import { BatchRunner } from './components/BatchRunner';
 import { EditorView } from './components/EditorView';
 import { ExportPanel } from './components/ExportPanel';
 import { CostSummary } from './components/CostSummary';
-import { RunHistory } from './components/RunHistory';
+import { JobsList } from './components/JobsList';
 import { LanguageToggle } from './components/LanguageToggle';
 import { MugahPromo } from './components/MugahPromo';
 
 function AppShell() {
   const { t, lang } = useI18n();
   const dir = lang === 'he' ? 'rtl' : 'ltr';
+  const [tab, setTab] = useState('ocr');
   return (
     <div dir={dir} className="max-w-7xl mx-auto p-6 flex flex-col gap-4 min-h-screen">
       <header className="flex items-center justify-between gap-3">
@@ -27,12 +29,12 @@ function AppShell() {
           <MugahPromo />
         </div>
       </header>
-      <Tabs defaultValue="ocr" dir={dir} className="flex-1">
+      <Tabs value={tab} onValueChange={setTab} dir={dir} className="flex-1">
         <TabsList>
           <TabsTrigger value="ocr">{t('tabs.ocr')}</TabsTrigger>
           <TabsTrigger value="editor">{t('tabs.editor')}</TabsTrigger>
           <TabsTrigger value="export">{t('tabs.export')}</TabsTrigger>
-          <TabsTrigger value="history">{t('tabs.history')}</TabsTrigger>
+          <TabsTrigger value="jobs">{t('tabs.jobs')}</TabsTrigger>
         </TabsList>
         <TabsContent value="ocr">
           <div className="space-y-6">
@@ -45,7 +47,7 @@ function AppShell() {
         </TabsContent>
         <TabsContent value="editor"><EditorView /></TabsContent>
         <TabsContent value="export"><ExportPanel /></TabsContent>
-        <TabsContent value="history"><RunHistory /></TabsContent>
+        <TabsContent value="jobs"><JobsList onOpened={() => setTab('editor')} /></TabsContent>
       </Tabs>
 
       <footer className="mt-10 flex flex-col items-center justify-center gap-2 border-t pt-6 text-sm text-gray-500">

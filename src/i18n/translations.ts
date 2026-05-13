@@ -13,7 +13,7 @@ const en: Dict = {
   'tabs.ocr': 'OCR',
   'tabs.editor': 'Editor',
   'tabs.export': 'Export',
-  'tabs.history': 'History',
+  'tabs.jobs': 'Jobs',
 
   // CostSummary
   'cost.estimated': 'Estimated: {in} in / {out} out tokens — ${cost}',
@@ -130,13 +130,19 @@ const en: Dict = {
   'export.preview': 'Markdown preview',
   'export.empty': '(no OCR\'d pages yet)',
 
-  // RunHistory
-  'history.empty': 'No runs yet.',
-  'history.when': 'When',
-  'history.file': 'File',
-  'history.model': 'Model',
-  'history.okFail': 'OK / Fail',
-  'history.cost': 'Cost',
+  // JobsList
+  'jobs.empty': 'No saved jobs yet.',
+  'jobs.file': 'File',
+  'jobs.pages': 'Pages',
+  'jobs.status': 'Status',
+  'jobs.lastOpened': 'Last opened',
+  'jobs.actions': 'Actions',
+  'jobs.reload': 'Reload',
+  'jobs.delete': 'Delete',
+  'jobs.confirmDelete': 'Delete saved job for "{name}"? Text, corrections, and page images for this file will be removed from your browser.',
+  'jobs.privacyNote': 'Saved in your browser only — clear browser data to remove.',
+  'jobs.statusSummary': '{ok} ok · {edited} edited · {error} error · {pending} pending',
+  'jobs.reloadFailed': 'Reload failed: {msg}',
 
   // ErrorBoundary
   'error.title': 'Something went wrong',
@@ -154,7 +160,7 @@ const he: Dict = {
   'tabs.ocr': 'OCR',
   'tabs.editor': 'עריכה',
   'tabs.export': 'ייצוא',
-  'tabs.history': 'היסטוריה',
+  'tabs.jobs': 'עבודות',
 
   // CostSummary
   'cost.estimated': 'הערכה: {in} כניסה / {out} יציאה טוקנים — ${cost}',
@@ -271,13 +277,19 @@ const he: Dict = {
   'export.preview': 'תצוגה מקדימה של Markdown',
   'export.empty': '(אין עדיין עמודים שעברו OCR)',
 
-  // RunHistory
-  'history.empty': 'אין עדיין הפעלות.',
-  'history.when': 'מתי',
-  'history.file': 'קובץ',
-  'history.model': 'מודל',
-  'history.okFail': 'הצלחה / כישלון',
-  'history.cost': 'עלות',
+  // JobsList
+  'jobs.empty': 'אין עבודות שמורות עדיין.',
+  'jobs.file': 'קובץ',
+  'jobs.pages': 'עמודים',
+  'jobs.status': 'מצב',
+  'jobs.lastOpened': 'נפתח לאחרונה',
+  'jobs.actions': 'פעולות',
+  'jobs.reload': 'טען מחדש',
+  'jobs.delete': 'מחק',
+  'jobs.confirmDelete': 'למחוק את העבודה השמורה של "{name}"? טקסט, תיקונים ותמונות עמודים של קובץ זה יוסרו מהדפדפן.',
+  'jobs.privacyNote': 'נשמר בדפדפן בלבד — נקה נתוני אתר להסרה.',
+  'jobs.statusSummary': '{ok} הצלחות · {edited} נערכו · {error} שגיאות · {pending} ממתינים',
+  'jobs.reloadFailed': 'הטעינה נכשלה: {msg}',
 
   // ErrorBoundary
   'error.title': 'משהו השתבש',
