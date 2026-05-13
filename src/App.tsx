@@ -22,9 +22,9 @@ function AppShell() {
       <header className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">{t('app.title')}</h1>
         <div className="flex items-center gap-2">
-          <MugahPromo />
           <CostSummary />
           <LanguageToggle />
+          <MugahPromo />
         </div>
       </header>
       <Tabs defaultValue="ocr" dir={dir} className="flex-1">
