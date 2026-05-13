@@ -1,4 +1,5 @@
 import * as mupdf from 'mupdf';
+import { loadPageImage } from '../store/pageImagesStore';
 
 export interface PdfDoc {
   type: 'pdf';
@@ -60,7 +61,6 @@ export async function renderPageToPng(loaded: LoadedDoc, pageNum: number, dpi = 
   if (loaded.type === 'stored') {
     const cached = loaded.cache.get(pageNum);
     if (cached) return cached;
-    const { loadPageImage } = await import('../store/pageImagesStore');
     const v = await loadPageImage(loaded.fileHash, pageNum);
     if (!v) throw new MissingPageImageError(pageNum);
     loaded.cache.set(pageNum, v);
