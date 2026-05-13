@@ -6,16 +6,15 @@ import { createModel } from '../ai/providers';
 import { ocrPage } from '../ai/ocr';
 import { renderPageToPng } from '../pdf/render';
 import { savePageResult } from '../store/persistence';
+import { savePageImage } from '../store/pageImagesStore';
 import { runBatch } from '../runner/orchestrator';
-import { appendRun } from '../store/runHistory';
-import { estimateCost } from '../ai/pricing';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 
 export function BatchRunner() {
   const { settings } = useSettings();
   const { t } = useI18n();
-  const { loadedDoc, fileHash, fileName, pages, setPageStatus, setPage, selectedPages, clearSelection } = useProject();
+  const { loadedDoc, fileHash, pages, setPageStatus, setPage, selectedPages, clearSelection } = useProject();
   const [running, setRunning] = useState(false);
   const [log, setLog] = useState<string[]>([]);
   const [showLog, setShowLog] = useState(false);
@@ -41,9 +40,6 @@ export function BatchRunner() {
 
     setRunning(true);
     abortRef.current = new AbortController();
-    const startedAt = Date.now();
-    let okCount = 0, failCount = 0;
-    let totalIn = 0, totalOut = 0;
     const processed = new Set<number>();
 
     for (const n of pageNums) setPageStatus(n, 'running');
@@ -54,21 +50,18 @@ export function BatchRunner() {
       signal: abortRef.current.signal,
       work: async (n, sig) => {
         const img = await renderPageToPng(loadedDoc, n);
+        savePageImage(fileHash, n, img);
         const r = await ocrPage(model, img.dataUrl, settings.prompts.ocr, sig);
         return { ok: true as const, value: r };
       },
       onProgress: (e) => {
         processed.add(e.item);
         if (e.ok && e.value) {
-          okCount++;
-          totalIn += e.value.tokensIn ?? 0;
-          totalOut += e.value.tokensOut ?? 0;
           const result = { pageNum: e.item, text: e.value.text, status: 'ok' as const, tokensIn: e.value.tokensIn, tokensOut: e.value.tokensOut };
           setPage(result);
           savePageResult(fileHash, result);
           append(t('batch.pageOk', { n: e.item + 1, chars: e.value.text.length }));
         } else {
-          failCount++;
           const result = { pageNum: e.item, text: '', status: 'error' as const, error: e.error };
           setPage(result);
           savePageResult(fileHash, result);
@@ -80,17 +73,6 @@ export function BatchRunner() {
     for (const n of pageNums) {
       if (!processed.has(n)) setPageStatus(n, 'pending');
     }
-
-    appendRun({
-      id: crypto.randomUUID(),
-      ts: startedAt,
-      fileName,
-      pagesOk: okCount,
-      pagesFailed: failCount,
-      route: settings.route,
-      model: settings.model,
-      costUsd: estimateCost(settings.model, { tokensIn: totalIn, tokensOut: totalOut }),
-    });
 
     setRunning(false);
     abortRef.current = null;
