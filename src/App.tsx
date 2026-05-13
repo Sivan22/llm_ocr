@@ -24,7 +24,6 @@ function AppShell() {
       <header className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">{t('app.title')}</h1>
         <div className="flex items-center gap-2">
-          <CostSummary />
           <LanguageToggle />
           <MugahPromo />
         </div>
@@ -42,6 +41,7 @@ function AppShell() {
             <hr className="border-gray-200" />
             <FileDrop />
             <BatchRunner />
+            <CostSummary />
             <PageList />
           </div>
         </TabsContent>

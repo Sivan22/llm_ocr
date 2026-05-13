@@ -152,6 +152,11 @@ const en: Dict = {
   'footer.github': 'GitHub repository',
   'footer.madeWith': 'Made with',
   'footer.author': 'by Sivan Ratson',
+
+  // MugahPromo
+  'mugah.brand': 'Mugah',
+  'mugah.tagline': 'Proofreading for Word',
+  'mugah.aria': 'Try Mugah — Torah proofreading add-in for Word',
 };
 
 const he: Dict = {
@@ -299,6 +304,11 @@ const he: Dict = {
   'footer.github': 'מאגר GitHub',
   'footer.madeWith': 'נוצר באהבה',
   'footer.author': 'על ידי סיון רצון',
+
+  // MugahPromo
+  'mugah.brand': 'מוגה',
+  'mugah.tagline': 'הגהה לוורד',
+  'mugah.aria': 'נסה את מוגה — תוסף הגהה תורנית לוורד',
 };
 
 export const TRANSLATIONS: Record<Lang, Dict> = { en, he };

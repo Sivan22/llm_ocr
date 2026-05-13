@@ -20,7 +20,10 @@ export function EditorView() {
     pages, setPage, setPageStatus, setCorrections,
   } = useProject();
   const { settings, updatePrompts } = useSettings();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const isRtl = lang === 'he';
+  const prevArrow = isRtl ? '→' : '←';
+  const nextArrow = isRtl ? '←' : '→';
   const [pageInput, setPageInput] = useState(String(currentPageNum + 1));
   const [showPrompt, setShowPrompt] = useState(false);
   const [running, setRunning] = useState(false);
@@ -100,25 +103,27 @@ export function EditorView() {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2 flex-wrap">
-        <Button variant="outline" disabled={currentPageNum <= 0} onClick={() => setCurrentPageNum(currentPageNum - 1)}>←</Button>
-        <Input
-          type="number"
-          min={1}
-          max={loadedDoc.pageCount}
-          value={pageInput}
-          onChange={(e) => setPageInput(e.target.value)}
-          onBlur={commitPageInput}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              (e.currentTarget as HTMLInputElement).blur();
-            }
-          }}
-          className="w-20 text-center"
-          aria-label={t('editor.page', { n: currentPageNum + 1, total: loadedDoc.pageCount })}
-        />
-        <span className="text-sm text-gray-600">/ {loadedDoc.pageCount}</span>
-        <Button variant="outline" disabled={currentPageNum >= last} onClick={() => setCurrentPageNum(currentPageNum + 1)}>→</Button>
+        <Button variant="outline" disabled={currentPageNum <= 0} onClick={() => setCurrentPageNum(currentPageNum - 1)}>{prevArrow}</Button>
+        <div dir="ltr" className="flex items-center gap-2">
+          <Input
+            type="number"
+            min={1}
+            max={loadedDoc.pageCount}
+            value={pageInput}
+            onChange={(e) => setPageInput(e.target.value)}
+            onBlur={commitPageInput}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                (e.currentTarget as HTMLInputElement).blur();
+              }
+            }}
+            className="w-20 text-center"
+            aria-label={t('editor.page', { n: currentPageNum + 1, total: loadedDoc.pageCount })}
+          />
+          <span className="text-sm text-gray-600">/ {loadedDoc.pageCount}</span>
+        </div>
+        <Button variant="outline" disabled={currentPageNum >= last} onClick={() => setCurrentPageNum(currentPageNum + 1)}>{nextArrow}</Button>
         <Button onClick={runOcr} disabled={running}>
           {running ? t('editor.ocrRunning') : t('editor.ocrPage')}
         </Button>
