@@ -59,18 +59,22 @@ export function FileDrop() {
       const restored = await loadAllPageResults(fileHash);
       setProject({ doc, fileHash, fileName: displayName, restored });
 
-      await upsertJob({ fileHash, fileName: displayName, pageCount: doc.pageCount });
-      await pruneJobs(20);
+      try {
+        await upsertJob({ fileHash, fileName: displayName, pageCount: doc.pageCount });
+        await pruneJobs(20);
 
-      if (doc.type === 'images') {
-        await Promise.all(doc.pages.map((p, i) =>
-          savePageImage(fileHash, i, { dataUrl: p.dataUrl, mediaType: p.mediaType }),
-        ));
-      } else if (doc.type === 'combined') {
-        const offset = doc.pdf.pageCount;
-        await Promise.all(doc.images.pages.map((p, i) =>
-          savePageImage(fileHash, offset + i, { dataUrl: p.dataUrl, mediaType: p.mediaType }),
-        ));
+        if (doc.type === 'images') {
+          await Promise.all(doc.pages.map((p, i) =>
+            savePageImage(fileHash, i, { dataUrl: p.dataUrl, mediaType: p.mediaType }),
+          ));
+        } else if (doc.type === 'combined') {
+          const offset = doc.pdf.pageCount;
+          await Promise.all(doc.images.pages.map((p, i) =>
+            savePageImage(fileHash, offset + i, { dataUrl: p.dataUrl, mediaType: p.mediaType }),
+          ));
+        }
+      } catch (err) {
+        console.warn('FileDrop: job persistence failed', err);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
