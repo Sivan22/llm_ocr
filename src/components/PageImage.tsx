@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useProject } from '../store/ProjectContext';
 import { useI18n } from '../i18n/I18nContext';
-import { renderPageToPng } from '../pdf/render';
+import { renderPageToPng, MissingPageImageError } from '../pdf/render';
 import { Button } from './ui/button';
 
 const ZOOM_MIN = 0.25;
@@ -88,9 +88,16 @@ export function PageImage() {
     if (!loadedDoc) return;
     renderPageToPng(loadedDoc, currentPageNum)
       .then((r) => { if (!cancelled) setSrc(r.dataUrl); })
-      .catch((e) => { if (!cancelled) setErr(e instanceof Error ? e.message : String(e)); });
+      .catch((e) => {
+        if (cancelled) return;
+        if (e instanceof MissingPageImageError) {
+          setErr(t('image.notStored'));
+        } else {
+          setErr(e instanceof Error ? e.message : String(e));
+        }
+      });
     return () => { cancelled = true; };
-  }, [loadedDoc, currentPageNum]);
+  }, [loadedDoc, currentPageNum, t]);
 
   // Attach wheel + pointer + resize handlers once. Live state read from refs,
   // so no closure-staleness and no remove/re-add churn.

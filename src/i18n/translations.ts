@@ -85,6 +85,7 @@ const en: Dict = {
 
   // PageImage
   'image.rendering': 'Rendering page…',
+  'image.notStored': 'Page image not stored — open the original file to view it.',
   'image.zoomIn': 'Zoom in',
   'image.zoomOut': 'Zoom out',
   'image.reset': 'Reset',
@@ -225,6 +226,7 @@ const he: Dict = {
 
   // PageImage
   'image.rendering': 'מעבד עמוד…',
+  'image.notStored': 'תמונת העמוד לא נשמרה — פתח את הקובץ המקורי כדי להציג.',
   'image.zoomIn': 'הגדל',
   'image.zoomOut': 'הקטן',
   'image.reset': 'איפוס',
