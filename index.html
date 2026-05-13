@@ -4,6 +4,18 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LLM OCR</title>
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('llm_ocr_web:lang:v1');
+          var lang = stored === 'he' || stored === 'en'
+            ? stored
+            : (navigator.language || '').toLowerCase().indexOf('he') === 0 ? 'he' : 'en';
+          document.documentElement.lang = lang;
+          document.documentElement.dir = lang === 'he' ? 'rtl' : 'ltr';
+        } catch (e) { /* ignore */ }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
