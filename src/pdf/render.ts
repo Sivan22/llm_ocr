@@ -19,7 +19,23 @@ export interface CombinedDoc {
   pageCount: number;
 }
 
-export type LoadedDoc = PdfDoc | ImageDoc | CombinedDoc;
+export interface StoredDoc {
+  type: 'stored';
+  fileHash: string;
+  pageCount: number;
+  cache: Map<number, { dataUrl: string; mediaType: string }>;
+}
+
+export type LoadedDoc = PdfDoc | ImageDoc | CombinedDoc | StoredDoc;
+
+export class MissingPageImageError extends Error {
+  pageNum: number;
+  constructor(pageNum: number) {
+    super(`Page ${pageNum} image not stored`);
+    this.name = 'MissingPageImageError';
+    this.pageNum = pageNum;
+  }
+}
 
 export async function openPdf(bytes: Uint8Array): Promise<PdfDoc> {
   const doc = mupdf.Document.openDocument(bytes, 'application/pdf');
@@ -41,6 +57,15 @@ export function combine(pdf: PdfDoc, images: ImageDoc): CombinedDoc {
 }
 
 export async function renderPageToPng(loaded: LoadedDoc, pageNum: number, dpi = 200): Promise<{ dataUrl: string; mediaType: string }> {
+  if (loaded.type === 'stored') {
+    const cached = loaded.cache.get(pageNum);
+    if (cached) return cached;
+    const { loadPageImage } = await import('../store/pageImagesStore');
+    const v = await loadPageImage(loaded.fileHash, pageNum);
+    if (!v) throw new MissingPageImageError(pageNum);
+    loaded.cache.set(pageNum, v);
+    return v;
+  }
   if (loaded.type === 'images') {
     const p = loaded.pages[pageNum];
     if (!p) throw new Error(`Page ${pageNum} out of range`);
