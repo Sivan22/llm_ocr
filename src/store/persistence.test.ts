@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import 'fake-indexeddb/auto';
+import { openDB } from 'idb';
 import { savePageResult, loadAllPageResults, deleteFile } from './persistence';
 import type { PageResult } from '../lib/types';
 
@@ -43,5 +44,18 @@ describe('persistence', () => {
     const out = await loadAllPageResults(A);
     expect(out).toHaveLength(1);
     expect(out[0].text).toBe('second');
+  });
+});
+
+describe('persistence DB v2', () => {
+  it('creates jobs, corrections, pageImages stores on upgrade', async () => {
+    // Trigger db open via any existing call:
+    await loadAllPageResults('zzzz');
+    const db = await openDB('llm_ocr_web');
+    expect(db.objectStoreNames.contains('pageResults')).toBe(true);
+    expect(db.objectStoreNames.contains('jobs')).toBe(true);
+    expect(db.objectStoreNames.contains('corrections')).toBe(true);
+    expect(db.objectStoreNames.contains('pageImages')).toBe(true);
+    db.close();
   });
 });
