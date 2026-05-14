@@ -35,7 +35,7 @@ describe('StoredDoc render', () => {
 
 function fakePdf(pageCount: number): PdfDoc {
   // We never actually render in these tests — combine() only inspects pageCount and shape.
-  return { type: 'pdf', doc: {} as unknown as PdfDoc['doc'], pageCount };
+  return { type: 'pdf', docId: '', pageCount };
 }
 
 function imgDoc(n: number): ImageDoc {

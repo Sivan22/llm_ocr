@@ -1,9 +1,9 @@
-import * as mupdf from 'mupdf';
 import { loadPageImage } from '../store/pageImagesStore';
+import { openPdfInWorker, renderPdfInWorker } from './renderClient';
 
 export interface PdfDoc {
   type: 'pdf';
-  doc: mupdf.PDFDocument;
+  docId: string;
   pageCount: number;
 }
 
@@ -39,10 +39,8 @@ export class MissingPageImageError extends Error {
 }
 
 export async function openPdf(bytes: Uint8Array): Promise<PdfDoc> {
-  const doc = mupdf.Document.openDocument(bytes, 'application/pdf');
-  const pdfDoc = doc.asPDF();
-  if (!pdfDoc) throw new Error('Failed to open PDF');
-  return { type: 'pdf', doc: pdfDoc, pageCount: pdfDoc.countPages() };
+  const { docId, pageCount } = await openPdfInWorker(bytes);
+  return { type: 'pdf', docId, pageCount };
 }
 
 export function imagesAsDoc(images: { bytes: Uint8Array; mediaType: string }[]): ImageDoc {
@@ -69,7 +67,7 @@ export function combine(left: LoadedDoc, right: LoadedDoc): CombinedDoc {
     ? leftPdf
     : (rightPdf && rightPdf.pageCount > 0)
     ? rightPdf
-    : { type: 'pdf', doc: {} as unknown as PdfDoc['doc'], pageCount: 0 };
+    : { type: 'pdf', docId: '', pageCount: 0 };
 
   const imgs: { dataUrl: string; mediaType: string }[] = [
     ...(leftImgs?.pages ?? []),
@@ -100,23 +98,19 @@ export async function renderPageToPng(loaded: LoadedDoc, pageNum: number, dpi = 
     }
     return renderPageToPng(loaded.images, pageNum - loaded.pdf.pageCount, dpi);
   }
-  const page = loaded.doc.loadPage(pageNum);
-  const scale = dpi / 72;
-  const matrix: mupdf.Matrix = [scale, 0, 0, scale, 0, 0];
-  const pixmap = page.toPixmap(matrix, mupdf.ColorSpace.DeviceRGB, false, true);
-  const png = pixmap.asPNG();
-  pixmap.destroy();
-  page.destroy();
-  return { dataUrl: bytesToDataUrl(png, 'image/png'), mediaType: 'image/png' };
-}
-
-function bytesToDataUrl(bytes: Uint8Array, mediaType: string): string {
-  let bin = '';
-  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-  return `data:${mediaType};base64,${btoa(bin)}`;
+  return renderPdfInWorker(loaded.docId, pageNum, dpi);
 }
 
 export async function readFileBytes(file: File): Promise<Uint8Array> {
   const buf = await file.arrayBuffer();
   return new Uint8Array(buf);
+}
+
+function bytesToDataUrl(bytes: Uint8Array, mediaType: string): string {
+  let bin = '';
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk) as unknown as number[]);
+  }
+  return `data:${mediaType};base64,${btoa(bin)}`;
 }

@@ -11,6 +11,7 @@ export default defineConfig({
   base: process.env.VITE_BASE || '/',
   plugins: [react(), tailwindcss()],
   optimizeDeps: { exclude: ['mupdf'] },
+  worker: { format: 'es' },
   resolve: {
     alias: { '@': path.resolve(__dirname, 'src') },
   },
