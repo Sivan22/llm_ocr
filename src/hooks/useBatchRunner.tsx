@@ -12,13 +12,10 @@ import { runBatch } from '../runner/orchestrator';
 interface BatchRunnerApi {
   running: boolean;
   log: string[];
-  startAll: () => void;
-  retryFailed: () => void;
-  runRange: (pageNums: number[]) => void;
   runSelected: () => void;
   stop: () => void;
-  eligibleCount: number;
-  failedCount: number;
+  pendingPages: number[];
+  failedPages: number[];
 }
 
 const Ctx = createContext<BatchRunnerApi | null>(null);
@@ -33,9 +30,10 @@ export function BatchRunnerProvider({ children }: { children: ReactNode }) {
 
   const append = (m: string) => setLog((l) => [...l, m]);
 
-  // `Start all` skips pages that are `ok` or `edited` so user edits aren't overwritten.
-  const eligible = pages.filter((p) => p.status === 'pending' || p.status === 'error').map((p) => p.pageNum);
-  const failed = pages.filter((p) => p.status === 'error').map((p) => p.pageNum);
+  // Pending = anything not yet successfully OCR'd. Failed = errored pages only.
+  // These power the "Select pending" / "Select failed" quick-select buttons.
+  const pendingPages = pages.filter((p) => p.status === 'pending' || p.status === 'error').map((p) => p.pageNum);
+  const failedPages = pages.filter((p) => p.status === 'error').map((p) => p.pageNum);
 
   const start = async (pageNums: number[]) => {
     if (!loadedDoc || pageNums.length === 0 || running) return;
@@ -81,20 +79,17 @@ export function BatchRunnerProvider({ children }: { children: ReactNode }) {
     abortRef.current = null;
   };
 
-  // Not memoized on purpose: the api closures capture `eligible`/`failed`,
+  // Not memoized on purpose: the api closures capture `pendingPages`/`failedPages`,
   // which can have identical lengths but different identities (e.g., one page
   // flips ok → edited while another flips pending → error). A length-keyed
-  // memo would skip invalidating and the button would fire on stale items.
+  // memo would skip invalidating and consumers would act on stale items.
   const api: BatchRunnerApi = {
     running,
     log,
-    startAll: () => start(eligible),
-    retryFailed: () => start(failed),
-    runRange: (pageNums) => start(pageNums),
     runSelected: () => start([...selectedPages].sort((a, b) => a - b)),
     stop: () => abortRef.current?.abort(),
-    eligibleCount: eligible.length,
-    failedCount: failed.length,
+    pendingPages,
+    failedPages,
   };
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;
