@@ -55,9 +55,11 @@ const en: Dict = {
 
   // BatchRunner
   'batch.run': 'Run',
+  'batch.runSelected': 'Run {n} selected',
+  'batch.clearSelectedN': 'Deselect {n}',
   'batch.stop': 'Stop',
-  'batch.selectPending': 'Select pending ({n})',
-  'batch.selectFailed': 'Select failed ({n})',
+  'batch.selectPending': 'Pending ({n})',
+  'batch.selectFailed': 'Failed ({n})',
   'batch.runPages': 'Pages',
   'batch.range.placeholder': 'e.g. 1-3, 5, 7-9',
   'batch.range.invalid': "Can't parse range",
@@ -226,9 +228,11 @@ const he: Dict = {
 
   // BatchRunner
   'batch.run': 'הפעל',
+  'batch.runSelected': 'הפעל {n} נבחרים',
+  'batch.clearSelectedN': 'בטל בחירה ({n})',
   'batch.stop': 'עצור',
-  'batch.selectPending': 'בחר ממתינים ({n})',
-  'batch.selectFailed': 'בחר נכשלו ({n})',
+  'batch.selectPending': 'ממתינים ({n})',
+  'batch.selectFailed': 'נכשלו ({n})',
   'batch.runPages': 'עמודים',
   'batch.range.placeholder': 'למשל 1-3, 5, 7-9',
   'batch.range.invalid': 'לא ניתן לפענח את הטווח',

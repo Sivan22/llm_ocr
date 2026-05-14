@@ -73,11 +73,13 @@ export function RunToolbar({ mode, onModeChange }: Props) {
           disabled={running || selectedPages.size === 0 || keyMissing}
           title={keyMissing ? keyMissingMsg : undefined}
         >
-          {t('batch.run')}
+          {selectedPages.size > 0
+            ? t('batch.runSelected', { n: selectedPages.size })
+            : t('batch.run')}
         </Button>
         {selectedPages.size > 0 && (
           <Button variant="outline" onClick={clearSelection} disabled={running}>
-            {t('batch.clearSelection')}
+            {t('batch.clearSelectedN', { n: selectedPages.size })}
           </Button>
         )}
         {running && (

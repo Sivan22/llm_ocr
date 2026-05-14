@@ -1,5 +1,6 @@
 // src/components/PageThumb.tsx
 import { useEffect, useRef, useState } from 'react';
+import { Trash2 } from 'lucide-react';
 import { useProject } from '../store/ProjectContext';
 import { renderPageToPng, MissingPageImageError } from '../pdf/render';
 import { loadPageImage, savePageImage } from '../store/pageImagesStore';
@@ -120,18 +121,20 @@ export function PageThumb({
   const removeBtn = (
     <button
       type="button"
+      draggable={false}
+      onDragStart={(e) => e.preventDefault()}
       onClick={handleRemoveClick}
       onMouseDown={(e) => e.stopPropagation()}
       aria-label={t('thumb.remove')}
       title={t('thumb.remove')}
       className={cn(
-        'absolute top-0.5 end-0.5 h-5 w-5 inline-flex items-center justify-center rounded',
-        'bg-white/85 text-gray-700 hover:bg-red-600 hover:text-white',
-        'text-sm leading-none font-bold opacity-0 group-hover:opacity-100 focus:opacity-100',
-        'transition-opacity z-10',
+        'absolute top-1 end-1 h-7 w-7 inline-flex items-center justify-center rounded',
+        'bg-white/90 text-gray-700 hover:bg-red-600 hover:text-white',
+        'opacity-0 group-hover:opacity-100 focus:opacity-100',
+        'transition-opacity z-10 shadow-sm',
       )}
     >
-      ×
+      <Trash2 className="h-4 w-4" />
     </button>
   );
 
