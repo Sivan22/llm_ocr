@@ -1,6 +1,6 @@
 // src/components/RunToolbar.tsx
 import { useEffect, useMemo, useState } from 'react';
-import { LayoutGrid, Grid3x3, List } from 'lucide-react';
+import { LayoutGrid, Grid3x3, List, Play, Square, X, Clock, AlertTriangle, Check } from 'lucide-react';
 import { useProject } from '../store/ProjectContext';
 import { useSettings } from '../store/SettingsContext';
 import { useI18n } from '../i18n/I18nContext';
@@ -68,41 +68,7 @@ export function RunToolbar({ mode, onModeChange }: Props) {
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
-        <Button
-          onClick={runSelected}
-          disabled={running || selectedPages.size === 0 || keyMissing}
-          title={keyMissing ? keyMissingMsg : undefined}
-        >
-          {selectedPages.size > 0
-            ? t('batch.runSelected', { n: selectedPages.size })
-            : t('batch.run')}
-        </Button>
-        {selectedPages.size > 0 && (
-          <Button variant="outline" onClick={clearSelection} disabled={running}>
-            {t('batch.clearSelectedN', { n: selectedPages.size })}
-          </Button>
-        )}
-        {running && (
-          <Button variant="outline" onClick={stop}>
-            {t('batch.stop')}
-          </Button>
-        )}
-        <Button
-          variant="outline"
-          onClick={() => selectPages(pendingPages)}
-          disabled={pendingPages.length === 0}
-        >
-          {t('batch.selectPending', { n: pendingPages.length })}
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => selectPages(failedPages)}
-          disabled={failedPages.length === 0}
-        >
-          {t('batch.selectFailed', { n: failedPages.length })}
-        </Button>
-
-        <span className="ms-2 text-sm text-gray-600">{t('batch.runPages')}</span>
+        <span className="text-sm text-gray-600">{t('batch.runPages')}</span>
         <div className="relative w-48">
           <Input
             type="text"
@@ -125,11 +91,53 @@ export function RunToolbar({ mode, onModeChange }: Props) {
             disabled={!canHighlight}
             aria-label={t('batch.highlightInPreview')}
             title={t('batch.highlightInPreview')}
-            className="absolute end-1 top-1/2 -translate-y-1/2 h-6 w-6 inline-flex items-center justify-center rounded text-sm text-gray-500 hover:text-gray-900 hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+            className="absolute end-1 top-1/2 -translate-y-1/2 h-6 w-6 inline-flex items-center justify-center rounded text-gray-500 hover:text-gray-900 hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed"
           >
-            ✓
+            <Check className="h-4 w-4" />
           </button>
         </div>
+
+        <Button
+          variant="outline"
+          onClick={() => selectPages(pendingPages)}
+          disabled={pendingPages.length === 0}
+        >
+          <Clock className="h-4 w-4 me-1" />
+          {t('batch.selectPending', { n: pendingPages.length })}
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => selectPages(failedPages)}
+          disabled={failedPages.length === 0}
+        >
+          <AlertTriangle className="h-4 w-4 me-1" />
+          {t('batch.selectFailed', { n: failedPages.length })}
+        </Button>
+
+        {running ? (
+          <Button className="ms-2" variant="destructive" onClick={stop}>
+            <Square className="h-4 w-4 me-1 fill-current" />
+            {t('batch.stop')}
+          </Button>
+        ) : (
+          <Button
+            className="ms-2"
+            onClick={runSelected}
+            disabled={selectedPages.size === 0 || keyMissing}
+            title={keyMissing ? keyMissingMsg : undefined}
+          >
+            <Play className="h-4 w-4 me-1 fill-current" />
+            {selectedPages.size > 0
+              ? t('batch.runSelected', { n: selectedPages.size })
+              : t('batch.run')}
+          </Button>
+        )}
+        {selectedPages.size > 0 && !running && (
+          <Button variant="outline" onClick={clearSelection}>
+            <X className="h-4 w-4 me-1" />
+            {t('batch.clearSelectedN', { n: selectedPages.size })}
+          </Button>
+        )}
 
         <div className="ms-auto flex items-center gap-1">
           {(['grid', 'compact', 'list'] as ThumbMode[]).map((m) => {

@@ -11,7 +11,7 @@ describe('translate', () => {
   });
 
   it('substitutes placeholders', () => {
-    expect(translate('en', 'batch.selectPending', { n: 7 })).toBe('Select pending (7)');
+    expect(translate('en', 'batch.selectPending', { n: 7 })).toBe('Pending (7)');
   });
 
   it('substitutes multiple placeholders', () => {
