@@ -17,7 +17,7 @@ const MODES: FixMode[] = ['general', 'headers', 'punctuation', 'custom'];
 
 export function FixPanel() {
   const { settings } = useSettings();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const {
     loadedDoc, fileHash, currentPageNum, pages, setPage,
     corrections, setCorrections,
@@ -33,6 +33,11 @@ export function FixPanel() {
   const page = pages.find((p) => p.pageNum === currentPageNum);
 
   const loadTemplate = (mode: FixMode) => {
+    if (mode === 'custom') {
+      setPrompt('');
+      setStatus('');
+      return;
+    }
     setPrompt(settings.prompts[mode]);
     setStatus(t('fix.loadedTemplate', { name: t(`mode.${mode}`) }));
   };
@@ -54,7 +59,7 @@ export function FixPanel() {
       const img = await renderPageToPng(loadedDoc, currentPageNum);
       savePageImage(fileHash, currentPageNum, img);
       const filled = substitute(prompt, { text: page.text });
-      const result = await correctPage(model, img.dataUrl, filled);
+      const result = await correctPage(model, img.dataUrl, filled, lang);
       setCorrections(result);
       setStatus(result.length === 0 ? t('fix.noCorrections') : t('fix.foundN', { n: result.length }));
     } catch (e) {
@@ -156,7 +161,7 @@ export function FixPanel() {
               onClick={() => loadTemplate(m)}
               variant="outline"
               className="text-xs h-7 px-2"
-              disabled={running || (m === 'custom' && !settings.prompts.custom.trim())}
+              disabled={running}
             >
               {t(`mode.${m}`)}
             </Button>
