@@ -9,6 +9,7 @@ export interface ReloadResult {
   fileHash: string;
   fileName: string;
   restored: PageResult[];
+  pageOrder?: number[];
 }
 
 export async function reloadJob(fileHash: string): Promise<ReloadResult | null> {
@@ -24,6 +25,6 @@ export async function reloadJob(fileHash: string): Promise<ReloadResult | null> 
     pageCount: job.pageCount,
     cache,
   };
-  await upsertJob({ fileHash, fileName: job.fileName, pageCount: job.pageCount });
-  return { doc, fileHash, fileName: job.fileName, restored };
+  await upsertJob({ fileHash, fileName: job.fileName, pageCount: job.pageCount, pageOrder: job.pageOrder });
+  return { doc, fileHash, fileName: job.fileName, restored, pageOrder: job.pageOrder };
 }

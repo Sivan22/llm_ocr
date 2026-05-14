@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import 'fake-indexeddb/auto';
-import { upsertJob, listJobs, getJob, deleteJob, pruneJobs, rekeyJob } from './jobs';
+import { upsertJob, listJobs, getJob, deleteJob, pruneJobs, rekeyJob, updateJobPageOrder } from './jobs';
 import { savePageResult, loadAllPageResults } from './persistence';
 import { saveCorrections, loadCorrections } from './correctionsStore';
 import { savePageImage, loadPageImage } from './pageImagesStore';
@@ -111,5 +111,30 @@ describe('rekeyJob', () => {
     expect(j?.fileName).toBe('a-renamed.pdf');
     expect(j?.pageCount).toBe(3);
     expect((await loadAllPageResults(A)).length).toBe(1);
+  });
+});
+
+describe('pageOrder persistence', () => {
+  beforeEach(reset);
+
+  it('upsertJob stores and preserves pageOrder across upserts', async () => {
+    await upsertJob({ fileHash: A, fileName: 'a.pdf', pageCount: 3, pageOrder: [2, 0, 1] });
+    expect((await getJob(A))?.pageOrder).toEqual([2, 0, 1]);
+
+    // Re-upserting without pageOrder preserves the existing value.
+    await upsertJob({ fileHash: A, fileName: 'a.pdf', pageCount: 3 });
+    expect((await getJob(A))?.pageOrder).toEqual([2, 0, 1]);
+  });
+
+  it('updateJobPageOrder writes the new order', async () => {
+    await upsertJob({ fileHash: A, fileName: 'a.pdf', pageCount: 3 });
+    await updateJobPageOrder(A, [1, 0]);
+    expect((await getJob(A))?.pageOrder).toEqual([1, 0]);
+  });
+
+  it('rekeyJob carries pageOrder over to the new hash', async () => {
+    await upsertJob({ fileHash: A, fileName: 'a.pdf', pageCount: 3, pageOrder: [2, 0, 1] });
+    await rekeyJob({ oldHash: A, newHash: B, fileName: 'a+b.pdf', pageCount: 5 });
+    expect((await getJob(B))?.pageOrder).toEqual([2, 0, 1]);
   });
 });

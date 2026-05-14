@@ -24,7 +24,7 @@ export function JobsList({ onOpened }: Props) {
     try {
       const out = await reloadJob(hash);
       if (!out) throw new Error('job not found');
-      setProject({ doc: out.doc, fileHash: out.fileHash, fileName: out.fileName, restored: out.restored });
+      setProject({ doc: out.doc, fileHash: out.fileHash, fileName: out.fileName, restored: out.restored, pageOrder: out.pageOrder });
       onOpened();
     } catch (e) {
       setErr(t('jobs.reloadFailed', { msg: e instanceof Error ? e.message : String(e) }));

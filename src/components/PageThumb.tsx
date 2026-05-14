@@ -11,11 +11,20 @@ export type ThumbMode = 'grid' | 'compact' | 'list';
 
 interface Props {
   page: PageResult;
+  displayIndex: number;
   mode: ThumbMode;
   selected: boolean;
   viewing: boolean;
+  dragging: boolean;
+  dropBefore: boolean;
+  dropAfter: boolean;
   onClick: (e: React.MouseEvent) => void;
   onDoubleClick: () => void;
+  onRemove: () => void;
+  onDragStart: (e: React.DragEvent) => void;
+  onDragEnd: () => void;
+  onDragOver: (e: React.DragEvent) => void;
+  onDrop: (e: React.DragEvent) => void;
 }
 
 const STATUS_RING: Record<PageResult['status'], string> = {
@@ -34,7 +43,23 @@ const STATUS_BG: Record<PageResult['status'], string> = {
   edited:  'bg-amber-50',
 };
 
-export function PageThumb({ page, mode, selected, viewing, onClick, onDoubleClick }: Props) {
+export function PageThumb({
+  page,
+  displayIndex,
+  mode,
+  selected,
+  viewing,
+  dragging,
+  dropBefore,
+  dropAfter,
+  onClick,
+  onDoubleClick,
+  onRemove,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDrop,
+}: Props) {
   const { loadedDoc, fileHash } = useProject();
   const { t } = useI18n();
   const [src, setSrc] = useState<string | null>(null);
@@ -87,35 +112,67 @@ export function PageThumb({ page, mode, selected, viewing, onClick, onDoubleClic
     }
   };
 
+  const handleRemoveClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onRemove();
+  };
+
+  const removeBtn = (
+    <button
+      type="button"
+      onClick={handleRemoveClick}
+      onMouseDown={(e) => e.stopPropagation()}
+      aria-label={t('thumb.remove')}
+      title={t('thumb.remove')}
+      className={cn(
+        'absolute top-0.5 end-0.5 h-5 w-5 inline-flex items-center justify-center rounded',
+        'bg-white/85 text-gray-700 hover:bg-red-600 hover:text-white',
+        'text-sm leading-none font-bold opacity-0 group-hover:opacity-100 focus:opacity-100',
+        'transition-opacity z-10',
+      )}
+    >
+      ×
+    </button>
+  );
+
   if (mode === 'list') {
     return (
       <div
         ref={ref}
         role="button"
         tabIndex={0}
+        draggable
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
         onClick={onClick}
         onDoubleClick={onDoubleClick}
         onKeyDown={onKeyDown}
         className={cn(
-          'flex items-center gap-3 px-2 py-1 rounded cursor-pointer select-none border',
+          'group relative flex items-center gap-3 px-2 py-1 rounded cursor-pointer select-none border',
           STATUS_BG[page.status],
           selected ? 'ring-2 ring-blue-600' : 'ring-0',
           viewing && !selected && 'ring-1 ring-gray-400',
+          dragging && 'opacity-50',
+          dropBefore && 'border-t-2 border-t-blue-500',
+          dropAfter && 'border-b-2 border-b-blue-500',
         )}
       >
         <div className="w-10 h-14 bg-white border flex items-center justify-center overflow-hidden">
           {src
-            ? <img src={src} alt="" className="object-cover w-full h-full" />
+            ? <img src={src} alt="" className="object-cover w-full h-full" draggable={false} />
             : <span className="text-[10px] text-gray-400">{missing ? '×' : '…'}</span>}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-xs font-mono">{page.pageNum + 1}</div>
+          <div className="text-xs font-mono">{displayIndex + 1}</div>
           <div className="text-xs text-gray-600 truncate" title={page.error ?? ''}>
             {t(`pages.status.${page.status}`)}
             {page.status === 'ok' && page.text ? ` · ${page.text.length} chars` : ''}
             {page.status === 'error' && page.error ? ` · ${page.error}` : ''}
           </div>
         </div>
+        {removeBtn}
       </div>
     );
   }
@@ -129,23 +186,32 @@ export function PageThumb({ page, mode, selected, viewing, onClick, onDoubleClic
       ref={ref}
       role="button"
       tabIndex={0}
+      draggable
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
       onKeyDown={onKeyDown}
       title={page.error ?? t(`pages.status.${page.status}`)}
       className={cn(
         wrapperBase,
-        'relative overflow-hidden rounded border cursor-pointer select-none',
+        'group relative overflow-hidden rounded border cursor-pointer select-none',
         'ring-2',
         selected ? 'ring-blue-600' : viewing ? 'ring-gray-400' : STATUS_RING[page.status],
+        dragging && 'opacity-50',
+        dropBefore && 'outline outline-2 outline-blue-500 outline-offset-[-2px]',
+        dropAfter && 'outline outline-2 outline-blue-500 outline-offset-[-2px]',
       )}
     >
       {src
-        ? <img src={src} alt="" className="w-full h-full object-cover" />
+        ? <img src={src} alt="" className="w-full h-full object-cover" draggable={false} />
         : <div className={cn('w-full h-full flex items-center justify-center', STATUS_BG[page.status])}>
             <span className="text-gray-500">{missing ? t('thumb.placeholderTooltip') : '…'}</span>
           </div>}
-      <span className="absolute top-0 left-0 px-1 bg-white/80 font-mono">{page.pageNum + 1}</span>
+      <span className="absolute top-0 left-0 px-1 bg-white/80 font-mono">{displayIndex + 1}</span>
+      {removeBtn}
     </div>
   );
 }

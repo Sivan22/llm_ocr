@@ -17,12 +17,14 @@ export interface JobRecord {
   pageCount: number;
   createdAt: number;
   lastOpenedAt: number;
+  pageOrder?: number[];
 }
 
 export interface UpsertJobInput {
   fileHash: string;
   fileName: string;
   pageCount: number;
+  pageOrder?: number[];
 }
 
 export async function upsertJob(input: UpsertJobInput): Promise<JobRecord> {
@@ -35,9 +37,22 @@ export async function upsertJob(input: UpsertJobInput): Promise<JobRecord> {
     pageCount: input.pageCount,
     createdAt: prev?.createdAt ?? now,
     lastOpenedAt: now,
+    pageOrder: input.pageOrder ?? prev?.pageOrder,
   };
   await d.put(STORE_JOBS, next, input.fileHash);
   return next;
+}
+
+export async function updateJobPageOrder(fileHash: string, pageOrder: number[]): Promise<void> {
+  try {
+    const d = await db();
+    const prev = (await d.get(STORE_JOBS, fileHash)) as JobRecord | undefined;
+    if (!prev) return;
+    const next: JobRecord = { ...prev, pageOrder, lastOpenedAt: Date.now() };
+    await d.put(STORE_JOBS, next, fileHash);
+  } catch (err) {
+    console.warn('jobs.updateJobPageOrder failed', err);
+  }
 }
 
 export async function getJob(fileHash: string): Promise<JobRecord | undefined> {
@@ -93,10 +108,11 @@ export interface RekeyJobInput {
   newHash: string;
   fileName: string;
   pageCount: number;
+  pageOrder?: number[];
 }
 
 export async function rekeyJob(input: RekeyJobInput): Promise<JobRecord> {
-  const { oldHash, newHash, fileName, pageCount } = input;
+  const { oldHash, newHash, fileName, pageCount, pageOrder } = input;
   const d = await db();
   const now = Date.now();
 
@@ -108,6 +124,7 @@ export async function rekeyJob(input: RekeyJobInput): Promise<JobRecord> {
       pageCount,
       createdAt: prev?.createdAt ?? now,
       lastOpenedAt: now,
+      pageOrder: pageOrder ?? prev?.pageOrder,
     };
     await d.put(STORE_JOBS, next, oldHash);
     return next;
@@ -140,6 +157,7 @@ export async function rekeyJob(input: RekeyJobInput): Promise<JobRecord> {
     pageCount,
     createdAt: prev?.createdAt ?? now,
     lastOpenedAt: now,
+    pageOrder: pageOrder ?? prev?.pageOrder,
   };
   await jobsStore.put(next, newHash);
   await jobsStore.delete(oldHash);

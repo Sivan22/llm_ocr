@@ -19,9 +19,11 @@ const sigOf = (text: string, cs: Correction[]) =>
   text + '|' + cs.map((c) => `${c.id}:${c.status}`).join(',');
 
 export function InlineDiffEditor() {
-  const { pages, currentPageNum, fileHash, setPage, corrections, selectedCid, selectionTick } = useProject();
+  const { pages, pageOrder, currentPageNum, fileHash, setPage, corrections, selectedCid, selectionTick } = useProject();
   const { t } = useI18n();
   const page = pages.find((p) => p.pageNum === currentPageNum);
+  const displayIdx = pageOrder.indexOf(currentPageNum);
+  const displayLabel = displayIdx >= 0 ? displayIdx + 1 : currentPageNum + 1;
   const pageText = page?.text ?? '';
   const statusLabel = page?.status ? t(`pages.status.${page.status}`) : '—';
 
@@ -118,7 +120,7 @@ export function InlineDiffEditor() {
         />
         <div className="flex justify-between items-center mt-2">
           <span className="text-xs text-gray-500">
-            {t('ocr.pageStatus', { n: currentPageNum + 1, chars: plainDraft.length, status: statusLabel })}
+            {t('ocr.pageStatus', { n: displayLabel, chars: plainDraft.length, status: statusLabel })}
           </span>
         </div>
       </div>
@@ -143,7 +145,7 @@ export function InlineDiffEditor() {
       />
       <div className="flex justify-between items-center mt-2">
         <span className="text-xs text-gray-500">
-          {t('ocr.pageStatusDiff', { n: currentPageNum + 1, chars: plainDraft.length, status: statusLabel })}
+          {t('ocr.pageStatusDiff', { n: displayLabel, chars: plainDraft.length, status: statusLabel })}
         </span>
       </div>
     </div>

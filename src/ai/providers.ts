@@ -39,6 +39,10 @@ export function modelsForRoute(route: Route): Model[] {
   return Object.keys(DIRECT_MODEL_ID[route] ?? {}) as Model[];
 }
 
+export function hasApiKey(settings: Settings): boolean {
+  return settings.apiKeys[settings.route].trim().length > 0;
+}
+
 export function createModel(settings: Settings): LanguageModel {
   const id = resolveModelId(settings.route, settings.model);
   switch (settings.route) {

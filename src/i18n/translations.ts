@@ -48,7 +48,6 @@ const en: Dict = {
   'drop.loaded.summary.error': '{n} error',
   'drop.loaded.appendHint': 'Drop or click to add more',
   'drop.loaded.startOver': 'Start over',
-  'drop.loaded.startOverConfirm': 'Discard the currently loaded files and start over?',
   'drop.disabledForStoredJob': 'Drop disabled — a saved job is open',
 
   // SettingsToggle
@@ -70,6 +69,7 @@ const en: Dict = {
   'batch.errorPrefix': 'ERROR: {msg}',
   'batch.pageOk': 'Page {n} OK ({chars} chars)',
   'batch.pageFailed': 'Page {n} FAILED: {err}',
+  'batch.apiKeyMissing': 'Add your {provider} API key in Settings to enable runs.',
 
   // PageList / PageThumbs
   'pages.status.pending': 'pending',
@@ -85,6 +85,7 @@ const en: Dict = {
 
   // PageThumb
   'thumb.placeholderTooltip': 'Page image not stored',
+  'thumb.remove': 'Remove page',
 
   // EditorView
   'editor.loadFirst': 'Load a file first.',
@@ -218,7 +219,6 @@ const he: Dict = {
   'drop.loaded.summary.error': '{n} שגיאות',
   'drop.loaded.appendHint': 'גרור או לחץ להוספה',
   'drop.loaded.startOver': 'התחל מחדש',
-  'drop.loaded.startOverConfirm': 'למחוק את הקבצים הטעונים ולהתחיל מחדש?',
   'drop.disabledForStoredJob': 'גרירה לא זמינה — פתוחה עבודה שמורה',
 
   // SettingsToggle
@@ -240,6 +240,7 @@ const he: Dict = {
   'batch.errorPrefix': 'שגיאה: {msg}',
   'batch.pageOk': 'עמוד {n} הושלם ({chars} תווים)',
   'batch.pageFailed': 'עמוד {n} נכשל: {err}',
+  'batch.apiKeyMissing': 'הוסף מפתח API של {provider} בהגדרות כדי להפעיל.',
 
   // PageList / PageThumbs
   'pages.status.pending': 'ממתין',
@@ -255,6 +256,7 @@ const he: Dict = {
 
   // PageThumb
   'thumb.placeholderTooltip': 'תמונת העמוד לא נשמרה',
+  'thumb.remove': 'הסר עמוד',
 
   // EditorView
   'editor.loadFirst': 'טען קובץ קודם.',

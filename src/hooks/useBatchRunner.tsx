@@ -23,7 +23,7 @@ const Ctx = createContext<BatchRunnerApi | null>(null);
 export function BatchRunnerProvider({ children }: { children: ReactNode }) {
   const { settings } = useSettings();
   const { t } = useI18n();
-  const { loadedDoc, fileHash, pages, setPageStatus, setPage, selectedPages } = useProject();
+  const { loadedDoc, fileHash, pages, pageOrder, setPageStatus, setPage, selectedPages } = useProject();
   const [running, setRunning] = useState(false);
   const [log, setLog] = useState<string[]>([]);
   const abortRef = useRef<AbortController | null>(null);
@@ -31,9 +31,14 @@ export function BatchRunnerProvider({ children }: { children: ReactNode }) {
   const append = (m: string) => setLog((l) => [...l, m]);
 
   // Pending = anything not yet successfully OCR'd. Failed = errored pages only.
-  // These power the "Select pending" / "Select failed" quick-select buttons.
-  const pendingPages = pages.filter((p) => p.status === 'pending' || p.status === 'error').map((p) => p.pageNum);
-  const failedPages = pages.filter((p) => p.status === 'error').map((p) => p.pageNum);
+  // Restrict to visible (non-removed) pages so quick-selects don't pull hidden pages back.
+  const visible = new Set(pageOrder);
+  const pendingPages = pages
+    .filter((p) => visible.has(p.pageNum) && (p.status === 'pending' || p.status === 'error'))
+    .map((p) => p.pageNum);
+  const failedPages = pages
+    .filter((p) => visible.has(p.pageNum) && p.status === 'error')
+    .map((p) => p.pageNum);
 
   const start = async (pageNums: number[]) => {
     if (!loadedDoc || pageNums.length === 0 || running) return;
@@ -86,7 +91,11 @@ export function BatchRunnerProvider({ children }: { children: ReactNode }) {
   const api: BatchRunnerApi = {
     running,
     log,
-    runSelected: () => start([...selectedPages].sort((a, b) => a - b)),
+    runSelected: () => {
+      const pos = new Map(pageOrder.map((n, i) => [n, i]));
+      const sorted = [...selectedPages].sort((a, b) => (pos.get(a) ?? a) - (pos.get(b) ?? b));
+      return start(sorted);
+    },
     stop: () => abortRef.current?.abort(),
     pendingPages,
     failedPages,

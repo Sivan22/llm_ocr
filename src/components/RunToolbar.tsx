@@ -2,8 +2,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { LayoutGrid, Grid3x3, List } from 'lucide-react';
 import { useProject } from '../store/ProjectContext';
+import { useSettings } from '../store/SettingsContext';
 import { useI18n } from '../i18n/I18nContext';
 import { useBatchRunner } from '../hooks/useBatchRunner';
+import { hasApiKey } from '../ai/providers';
 import { parsePageRange } from '../lib/pageRange';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -24,14 +26,23 @@ const VIEW_ICONS: Record<ThumbMode, typeof LayoutGrid> = {
 
 export function RunToolbar({ mode, onModeChange }: Props) {
   const { t } = useI18n();
-  const { loadedDoc, selectedPages, clearSelection, setSelectedPages, setSelectionAnchor } = useProject();
+  const { settings } = useSettings();
+  const { loadedDoc, pageOrder, selectedPages, clearSelection, setSelectedPages, setSelectionAnchor } = useProject();
   const { running, runSelected, stop, pendingPages, failedPages } = useBatchRunner();
   const [rangeInput, setRangeInput] = useState('');
 
-  const totalPages = loadedDoc?.pageCount ?? 0;
-  const { pages: rangePages, error: rangeError } = useMemo(
-    () => parsePageRange(rangeInput, totalPages),
-    [rangeInput, totalPages],
+  const keyMissing = !hasApiKey(settings);
+  const keyMissingMsg = t('batch.apiKeyMissing', { provider: t(`route.${settings.route}`) });
+
+  const visibleCount = pageOrder.length;
+  const { pages: rangeDisplayIdxs, error: rangeError } = useMemo(
+    () => parsePageRange(rangeInput, visibleCount),
+    [rangeInput, visibleCount],
+  );
+  // Range refers to display positions (1-indexed). Map back to actual pageNums.
+  const rangePages = useMemo(
+    () => rangeDisplayIdxs.map((i) => pageOrder[i]).filter((n): n is number => n !== undefined),
+    [rangeDisplayIdxs, pageOrder],
   );
 
   useEffect(() => {
@@ -57,12 +68,23 @@ export function RunToolbar({ mode, onModeChange }: Props) {
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
-        <Button onClick={runSelected} disabled={running || selectedPages.size === 0}>
+        <Button
+          onClick={runSelected}
+          disabled={running || selectedPages.size === 0 || keyMissing}
+          title={keyMissing ? keyMissingMsg : undefined}
+        >
           {t('batch.run')}
         </Button>
-        <Button variant="outline" onClick={stop} disabled={!running}>
-          {t('batch.stop')}
-        </Button>
+        {selectedPages.size > 0 && (
+          <Button variant="outline" onClick={clearSelection} disabled={running}>
+            {t('batch.clearSelection')}
+          </Button>
+        )}
+        {running && (
+          <Button variant="outline" onClick={stop}>
+            {t('batch.stop')}
+          </Button>
+        )}
         <Button
           variant="outline"
           onClick={() => selectPages(pendingPages)}
@@ -128,6 +150,12 @@ export function RunToolbar({ mode, onModeChange }: Props) {
         </div>
       </div>
 
+      {keyMissing && (
+        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+          {keyMissingMsg}
+        </p>
+      )}
+
       {rangeError && (
         <p className="text-xs text-red-600">{t('batch.range.invalid')}</p>
       )}
@@ -135,7 +163,6 @@ export function RunToolbar({ mode, onModeChange }: Props) {
       {selectedPages.size > 0 && (
         <div className={cn('flex items-center gap-2 text-sm rounded px-2 py-1 bg-blue-50 border border-blue-200')}>
           <span className="text-blue-900">{t('batch.selectedBar', { n: selectedPages.size })}</span>
-          <Button variant="outline" onClick={clearSelection} disabled={running}>{t('batch.clearSelection')}</Button>
         </div>
       )}
     </div>

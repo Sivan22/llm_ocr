@@ -17,21 +17,26 @@ import { Textarea } from './ui/textarea';
 export function EditorView() {
   const {
     loadedDoc, fileHash, currentPageNum, setCurrentPageNum,
-    pages, setPage, setPageStatus, setCorrections,
+    pages, pageOrder, setPage, setPageStatus, setCorrections,
   } = useProject();
   const { settings, updatePrompts } = useSettings();
   const { t, lang } = useI18n();
   const isRtl = lang === 'he';
   const prevArrow = isRtl ? '→' : '←';
   const nextArrow = isRtl ? '←' : '→';
-  const [pageInput, setPageInput] = useState(String(currentPageNum + 1));
+
+  const total = pageOrder.length;
+  const currentIdx = pageOrder.indexOf(currentPageNum);
+  const displayPos = currentIdx >= 0 ? currentIdx + 1 : 0;
+
+  const [pageInput, setPageInput] = useState(String(displayPos || 1));
   const [showPrompt, setShowPrompt] = useState(false);
   const [running, setRunning] = useState(false);
   const [status, setStatus] = useState('');
 
   useEffect(() => {
-    setPageInput(String(currentPageNum + 1));
-  }, [currentPageNum]);
+    setPageInput(String(displayPos || 1));
+  }, [displayPos]);
 
   useEffect(() => {
     setStatus('');
@@ -39,17 +44,22 @@ export function EditorView() {
 
   if (!loadedDoc) return <p className="text-gray-500">{t('editor.loadFirst')}</p>;
 
-  const last = loadedDoc.pageCount - 1;
   const currentPage = pages.find((p) => p.pageNum === currentPageNum);
+
+  const goToDisplayIdx = (idx: number) => {
+    if (total === 0) return;
+    const clamped = Math.max(0, Math.min(total - 1, idx));
+    setCurrentPageNum(pageOrder[clamped]);
+  };
 
   const commitPageInput = () => {
     const parsed = parseInt(pageInput, 10);
-    if (Number.isFinite(parsed)) {
-      const clamped = Math.min(loadedDoc.pageCount, Math.max(1, parsed));
-      setCurrentPageNum(clamped - 1);
+    if (Number.isFinite(parsed) && total > 0) {
+      const clamped = Math.min(total, Math.max(1, parsed));
+      goToDisplayIdx(clamped - 1);
       setPageInput(String(clamped));
     } else {
-      setPageInput(String(currentPageNum + 1));
+      setPageInput(String(displayPos || 1));
     }
   };
 
@@ -103,12 +113,12 @@ export function EditorView() {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2 flex-wrap">
-        <Button variant="outline" disabled={currentPageNum <= 0} onClick={() => setCurrentPageNum(currentPageNum - 1)}>{prevArrow}</Button>
+        <Button variant="outline" disabled={currentIdx <= 0} onClick={() => goToDisplayIdx(currentIdx - 1)}>{prevArrow}</Button>
         <div dir="ltr" className="flex items-center gap-2">
           <Input
             type="number"
             min={1}
-            max={loadedDoc.pageCount}
+            max={total}
             value={pageInput}
             onChange={(e) => setPageInput(e.target.value)}
             onBlur={commitPageInput}
@@ -119,11 +129,11 @@ export function EditorView() {
               }
             }}
             className="w-20 text-center"
-            aria-label={t('editor.page', { n: currentPageNum + 1, total: loadedDoc.pageCount })}
+            aria-label={t('editor.page', { n: displayPos, total })}
           />
-          <span className="text-sm text-gray-600">/ {loadedDoc.pageCount}</span>
+          <span className="text-sm text-gray-600">/ {total}</span>
         </div>
-        <Button variant="outline" disabled={currentPageNum >= last} onClick={() => setCurrentPageNum(currentPageNum + 1)}>{nextArrow}</Button>
+        <Button variant="outline" disabled={currentIdx < 0 || currentIdx >= total - 1} onClick={() => goToDisplayIdx(currentIdx + 1)}>{nextArrow}</Button>
         <Button onClick={runOcr} disabled={running}>
           {running ? t('editor.ocrRunning') : t('editor.ocrPage')}
         </Button>

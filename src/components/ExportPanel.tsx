@@ -6,9 +6,9 @@ import { mdToDocxBlob, downloadBlob } from '../docx/export';
 import { Button } from './ui/button';
 
 export function ExportPanel() {
-  const { pages, fileName } = useProject();
+  const { pages, pageOrder, fileName } = useProject();
   const { t } = useI18n();
-  const md = useMemo(() => joinPages(pages), [pages]);
+  const md = useMemo(() => joinPages(pages, pageOrder), [pages, pageOrder]);
   const [busy, setBusy] = useState(false);
 
   const onDownload = async () => {

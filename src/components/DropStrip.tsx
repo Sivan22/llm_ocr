@@ -11,7 +11,7 @@ import { concatBytes } from '../lib/bytes';
 import { cn } from '../lib/utils';
 
 export function DropStrip() {
-  const { setProject, loadedDoc, fileName, bytes, pages, resetProject, appendFiles } = useProject();
+  const { setProject, loadedDoc, fileName, bytes, pages, pageOrder, resetProject, appendFiles } = useProject();
   const { t } = useI18n();
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -96,7 +96,6 @@ export function DropStrip() {
   const handleClick = () => inputRef.current?.click();
   const handleStartOver = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!window.confirm(t('drop.loaded.startOverConfirm'))) return;
     resetProject();
   };
 
@@ -105,9 +104,11 @@ export function DropStrip() {
     handleFiles(Array.from(e.dataTransfer.files));
   };
 
-  const nDone = pages.filter((p) => p.status === 'ok' || p.status === 'edited').length;
-  const nTodo = pages.filter((p) => p.status === 'pending').length;
-  const nError = pages.filter((p) => p.status === 'error').length;
+  const visible = new Set(pageOrder);
+  const visiblePages = pages.filter((p) => visible.has(p.pageNum));
+  const nDone = visiblePages.filter((p) => p.status === 'ok' || p.status === 'edited').length;
+  const nTodo = visiblePages.filter((p) => p.status === 'pending').length;
+  const nError = visiblePages.filter((p) => p.status === 'error').length;
 
   // Empty state
   if (!loadedDoc) {
@@ -160,7 +161,7 @@ export function DropStrip() {
       >
         <div className="truncate">
           <span className="font-medium">{fileName}</span>
-          <span className="text-gray-500"> · {t('drop.loaded.summary.pages', { pages: loadedDoc.pageCount })}</span>
+          <span className="text-gray-500"> · {t('drop.loaded.summary.pages', { pages: pageOrder.length })}</span>
           {nDone   > 0 && <span className="text-gray-500"> · {t('drop.loaded.summary.done',  { n: nDone   })}</span>}
           {nTodo   > 0 && <span className="text-gray-500"> · {t('drop.loaded.summary.todo',  { n: nTodo   })}</span>}
           {nError  > 0 && <span className="text-red-600"> · {t('drop.loaded.summary.error', { n: nError  })}</span>}

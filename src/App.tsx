@@ -54,7 +54,7 @@ function AppShell() {
         </TabsContent>
         <TabsContent value="editor"><EditorView /></TabsContent>
         <TabsContent value="export"><ExportPanel /></TabsContent>
-        <TabsContent value="jobs"><JobsList onOpened={() => setTab('editor')} /></TabsContent>
+        <TabsContent value="jobs"><JobsList onOpened={() => setTab('ocr')} /></TabsContent>
       </Tabs>
 
       <footer className="mt-10 flex flex-col items-center justify-center gap-2 border-t pt-6 text-sm text-gray-500">

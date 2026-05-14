@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useProject } from '../store/ProjectContext';
 import { useSettings } from '../store/SettingsContext';
 import { useI18n } from '../i18n/I18nContext';
-import { createModel } from '../ai/providers';
+import { createModel, hasApiKey } from '../ai/providers';
 import { correctPage } from '../ai/correct';
 import { renderPageToPng } from '../pdf/render';
 import { substitute } from '../runner/prompt';
@@ -175,9 +175,19 @@ export function FixPanel() {
         className="font-mono text-xs"
         placeholder={t('fix.promptPlaceholder')}
       />
-      <Button onClick={run} disabled={running || !prompt.trim()} className="text-xs">
+      <Button
+        onClick={run}
+        disabled={running || !prompt.trim() || !hasApiKey(settings)}
+        className="text-xs"
+        title={!hasApiKey(settings) ? t('batch.apiKeyMissing', { provider: t(`route.${settings.route}`) }) : undefined}
+      >
         {running ? t('fix.running') : t('fix.run')}
       </Button>
+      {!hasApiKey(settings) && (
+        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+          {t('batch.apiKeyMissing', { provider: t(`route.${settings.route}`) })}
+        </p>
+      )}
       <p className="text-xs text-gray-600">{status}</p>
       <div className="flex flex-wrap gap-2">
         {hasPending && (

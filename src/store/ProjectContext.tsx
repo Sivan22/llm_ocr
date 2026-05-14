@@ -5,8 +5,9 @@ import type { LoadedDoc } from '../pdf/render';
 import { combine, imagesAsDoc, openPdf, readFileBytes } from '../pdf/render';
 import { sha256 } from '../pdf/hash';
 import { loadCorrections, saveCorrections } from './correctionsStore';
-import { rekeyJob, pruneJobs } from './jobs';
+import { rekeyJob, pruneJobs, updateJobPageOrder } from './jobs';
 import { concatBytes } from '../lib/bytes';
+import { applyMove, sanitizePageOrder } from '../lib/pageOrder';
 
 interface Ctx {
   loadedDoc: LoadedDoc | null;
@@ -14,6 +15,7 @@ interface Ctx {
   fileName: string;
   bytes: Uint8Array | null;
   pages: PageResult[];
+  pageOrder: number[];
   currentPageNum: number;
   selectedPages: Set<number>;
   selectionAnchor: number | null;
@@ -26,6 +28,7 @@ interface Ctx {
     fileName: string;
     restored: PageResult[];
     bytes?: Uint8Array | null;
+    pageOrder?: number[];
   }) => void;
   resetProject: () => void;
   setPage: (page: PageResult) => void;
@@ -39,6 +42,8 @@ interface Ctx {
   setCorrections: (next: Correction[] | ((prev: Correction[]) => Correction[])) => void;
   selectCorrection: (cid: string | null) => void;
   appendFiles: (files: File[]) => Promise<{ appended: number; warning?: string }>;
+  removePages: (nums: number[]) => void;
+  movePages: (nums: number[], toIndex: number) => void;
 }
 
 const ProjectCtx = createContext<Ctx | null>(null);
@@ -49,6 +54,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
   const [fileName, setFileName] = useState<string>('');
   const [bytes, setBytes] = useState<Uint8Array | null>(null);
   const [pages, setPages] = useState<PageResult[]>([]);
+  const [pageOrder, setPageOrderState] = useState<number[]>([]);
   const [currentPageNum, setCurrentPageNumRaw] = useState<number>(0);
   const [selectedPages, setSelectedPagesState] = useState<Set<number>>(() => new Set());
   const [selectionAnchor, setSelectionAnchor] = useState<number | null>(null);
@@ -94,7 +100,18 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     saveCorrections(fileHash, currentPageNum, corrections);
   }, [fileHash, currentPageNum, corrections]);
 
-  const setProject: Ctx['setProject'] = ({ doc, fileHash, fileName, restored, bytes: nextBytes = null }) => {
+  const lastSavedOrderHash = useRef<string>('');
+  useEffect(() => {
+    if (!fileHash) { lastSavedOrderHash.current = ''; return; }
+    const hash = `${fileHash}|${pageOrder.join(',')}`;
+    if (lastSavedOrderHash.current === hash) return;
+    lastSavedOrderHash.current = hash;
+    updateJobPageOrder(fileHash, pageOrder).catch((err) => {
+      console.warn('ProjectContext: updateJobPageOrder failed', err);
+    });
+  }, [fileHash, pageOrder]);
+
+  const setProject: Ctx['setProject'] = ({ doc, fileHash, fileName, restored, bytes: nextBytes = null, pageOrder: restoredOrder }) => {
     setLoadedDoc(doc);
     setFileHash(fileHash);
     setFileName(fileName);
@@ -104,7 +121,12 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
       return found ?? { pageNum: i, text: '', status: 'pending' as Status };
     });
     setPages(init);
-    setCurrentPageNumRaw(0);
+    const defaultOrder = Array.from({ length: doc.pageCount }, (_, i) => i);
+    const validOrder = restoredOrder
+      ? sanitizePageOrder(restoredOrder, doc.pageCount)
+      : defaultOrder;
+    setPageOrderState(validOrder);
+    setCurrentPageNumRaw(validOrder[0] ?? 0);
     setSelectedPagesState(new Set());
     setSelectionAnchor(null);
     setSelectedCid(null);
@@ -116,6 +138,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     setFileName('');
     setBytes(null);
     setPages([]);
+    setPageOrderState([]);
     setCurrentPageNumRaw(0);
     setSelectedPagesState(new Set());
     setSelectionAnchor(null);
@@ -127,7 +150,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
   };
 
   const selectAllPages = () => {
-    setSelectedPagesState(new Set(pages.map((p) => p.pageNum)));
+    setSelectedPagesState(new Set(pageOrder));
   };
 
   const clearSelection = () => {
@@ -141,6 +164,35 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
       if (out.has(n)) out.delete(n); else out.add(n);
       return out;
     });
+  };
+
+  const removePages: Ctx['removePages'] = (nums) => {
+    if (nums.length === 0) return;
+    const removed = new Set(nums);
+    setPageOrderState((prev) => {
+      const next = prev.filter((n) => !removed.has(n));
+      if (removed.has(currentPageNum)) {
+        const oldIdx = prev.indexOf(currentPageNum);
+        const newIdx = Math.min(Math.max(oldIdx, 0), next.length - 1);
+        if (newIdx >= 0) setCurrentPageNumRaw(next[newIdx]);
+      }
+      return next;
+    });
+    setSelectedPagesState((prev) => {
+      let changed = false;
+      const next = new Set<number>();
+      for (const n of prev) {
+        if (removed.has(n)) { changed = true; continue; }
+        next.add(n);
+      }
+      return changed ? next : prev;
+    });
+    setSelectionAnchor((a) => (a !== null && removed.has(a) ? null : a));
+  };
+
+  const movePages: Ctx['movePages'] = (nums, toIndex) => {
+    if (nums.length === 0) return;
+    setPageOrderState((prev) => applyMove(prev, nums, toIndex));
   };
 
   const appendFiles: Ctx['appendFiles'] = async (files) => {
@@ -180,7 +232,12 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     const mergedDoc = combine(loadedDoc, addedDoc);
     const mergedName = `${fileName} + ${files.map((f) => f.name).join(' + ')}`;
 
-    await rekeyJob({ oldHash, newHash, fileName: mergedName, pageCount: mergedDoc.pageCount });
+    const appendedOrder = [
+      ...pageOrder,
+      ...Array.from({ length: addedDoc.pageCount }, (_, i) => loadedDoc.pageCount + i),
+    ];
+
+    await rekeyJob({ oldHash, newHash, fileName: mergedName, pageCount: mergedDoc.pageCount, pageOrder: appendedOrder });
 
     setProject({
       doc: mergedDoc,
@@ -188,6 +245,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
       fileName: mergedName,
       restored: pages.slice(),
       bytes: merged,
+      pageOrder: appendedOrder,
     });
 
     await pruneJobs(20);
@@ -200,6 +258,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     fileName,
     bytes,
     pages,
+    pageOrder,
     currentPageNum,
     selectedPages,
     selectionAnchor,
@@ -220,7 +279,9 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     setCorrections,
     selectCorrection,
     appendFiles,
-  }), [loadedDoc, fileHash, fileName, bytes, pages, currentPageNum, selectedPages, selectionAnchor, corrections, selectedCid, selectionTick]);
+    removePages,
+    movePages,
+  }), [loadedDoc, fileHash, fileName, bytes, pages, pageOrder, currentPageNum, selectedPages, selectionAnchor, corrections, selectedCid, selectionTick]);
 
   return <ProjectCtx.Provider value={ctx}>{children}</ProjectCtx.Provider>;
 }
