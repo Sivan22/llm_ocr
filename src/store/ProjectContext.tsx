@@ -169,15 +169,13 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
   const removePages: Ctx['removePages'] = (nums) => {
     if (nums.length === 0) return;
     const removed = new Set(nums);
-    setPageOrderState((prev) => {
-      const next = prev.filter((n) => !removed.has(n));
-      if (removed.has(currentPageNum)) {
-        const oldIdx = prev.indexOf(currentPageNum);
-        const newIdx = Math.min(Math.max(oldIdx, 0), next.length - 1);
-        if (newIdx >= 0) setCurrentPageNumRaw(next[newIdx]);
-      }
-      return next;
-    });
+    if (removed.has(currentPageNum)) {
+      const oldIdx = pageOrder.indexOf(currentPageNum);
+      const nextOrder = pageOrder.filter((n) => !removed.has(n));
+      const newIdx = Math.min(Math.max(oldIdx, 0), nextOrder.length - 1);
+      if (newIdx >= 0) setCurrentPageNumRaw(nextOrder[newIdx]);
+    }
+    setPageOrderState((prev) => prev.filter((n) => !removed.has(n)));
     setSelectedPagesState((prev) => {
       let changed = false;
       const next = new Set<number>();

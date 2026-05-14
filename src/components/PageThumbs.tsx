@@ -52,6 +52,8 @@ export function PageThumbs({ mode, onOpenPage }: Props) {
     [pageOrder, pagesByNum],
   );
 
+  const draggingSet = useMemo(() => new Set(dragPages ?? []), [dragPages]);
+
   useEffect(() => {
     const node = containerRef.current;
     if (!node) return;
@@ -150,8 +152,6 @@ export function PageThumbs({ mode, onOpenPage }: Props) {
     : mode === 'grid'
     ? 'grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] gap-2'
     : 'flex flex-col gap-1';
-
-  const draggingSet = useMemo(() => new Set(dragPages ?? []), [dragPages]);
 
   return (
     <div
