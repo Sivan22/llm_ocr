@@ -7,6 +7,7 @@ import { loadPageImage, savePageImage } from '../store/pageImagesStore';
 import { useI18n } from '../i18n/I18nContext';
 import type { PageResult } from '../lib/types';
 import { cn } from '../lib/utils';
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 
 export type ThumbMode = 'grid' | 'compact' | 'list';
 
@@ -119,23 +120,27 @@ export function PageThumb({
   };
 
   const removeBtn = (
-    <button
-      type="button"
-      draggable={false}
-      onDragStart={(e) => e.preventDefault()}
-      onClick={handleRemoveClick}
-      onMouseDown={(e) => e.stopPropagation()}
-      aria-label={t('thumb.remove')}
-      title={t('thumb.remove')}
-      className={cn(
-        'absolute top-1 end-1 h-7 w-7 inline-flex items-center justify-center rounded',
-        'bg-white/90 text-gray-700 hover:bg-red-600 hover:text-white',
-        'opacity-0 group-hover:opacity-100 focus:opacity-100',
-        'transition-opacity z-10 shadow-sm',
-      )}
-    >
-      <Trash2 className="h-4 w-4" />
-    </button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          draggable={false}
+          onDragStart={(e) => e.preventDefault()}
+          onClick={handleRemoveClick}
+          onMouseDown={(e) => e.stopPropagation()}
+          aria-label={t('thumb.remove')}
+          className={cn(
+            'absolute top-1 end-1 h-7 w-7 inline-flex items-center justify-center rounded',
+            'bg-white/90 text-gray-700 hover:bg-red-600 hover:text-white',
+            'opacity-0 group-hover:opacity-100 focus:opacity-100',
+            'transition-opacity z-10 shadow-sm',
+          )}
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>{t('thumb.remove')}</TooltipContent>
+    </Tooltip>
   );
 
   if (mode === 'list') {
@@ -169,11 +174,23 @@ export function PageThumb({
         </div>
         <div className="flex-1 min-w-0">
           <div className="text-xs font-mono">{displayIndex + 1}</div>
-          <div className="text-xs text-gray-600 truncate" title={page.error ?? ''}>
-            {t(`pages.status.${page.status}`)}
-            {page.status === 'ok' && page.text ? ` · ${page.text.length} chars` : ''}
-            {page.status === 'error' && page.error ? ` · ${page.error}` : ''}
-          </div>
+          {page.error ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="text-xs text-gray-600 truncate">
+                  {t(`pages.status.${page.status}`)}
+                  {page.status === 'ok' && page.text ? ` · ${page.text.length} chars` : ''}
+                  {page.status === 'error' && page.error ? ` · ${page.error}` : ''}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>{page.error}</TooltipContent>
+            </Tooltip>
+          ) : (
+            <div className="text-xs text-gray-600 truncate">
+              {t(`pages.status.${page.status}`)}
+              {page.status === 'ok' && page.text ? ` · ${page.text.length} chars` : ''}
+            </div>
+          )}
         </div>
         {removeBtn}
       </div>
@@ -185,36 +202,40 @@ export function PageThumb({
     : 'aspect-[5/7] text-xs';
 
   return (
-    <div
-      ref={ref}
-      role="button"
-      tabIndex={0}
-      draggable
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
-      onDragOver={onDragOver}
-      onDrop={onDrop}
-      onClick={onClick}
-      onDoubleClick={onDoubleClick}
-      onKeyDown={onKeyDown}
-      title={page.error ?? t(`pages.status.${page.status}`)}
-      className={cn(
-        wrapperBase,
-        'group relative overflow-hidden rounded border cursor-pointer select-none',
-        'ring-2',
-        selected ? 'ring-blue-600' : viewing ? 'ring-gray-400' : STATUS_RING[page.status],
-        dragging && 'opacity-50',
-        dropBefore && 'outline outline-2 outline-blue-500 outline-offset-[-2px]',
-        dropAfter && 'outline outline-2 outline-blue-500 outline-offset-[-2px]',
-      )}
-    >
-      {src
-        ? <img src={src} alt="" className="w-full h-full object-cover" draggable={false} />
-        : <div className={cn('w-full h-full flex items-center justify-center', STATUS_BG[page.status])}>
-            <span className="text-gray-500">{missing ? t('thumb.placeholderTooltip') : '…'}</span>
-          </div>}
-      <span className="absolute top-0 left-0 px-1 bg-white/80 font-mono">{displayIndex + 1}</span>
-      {removeBtn}
-    </div>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div
+          ref={ref}
+          role="button"
+          tabIndex={0}
+          draggable
+          onDragStart={onDragStart}
+          onDragEnd={onDragEnd}
+          onDragOver={onDragOver}
+          onDrop={onDrop}
+          onClick={onClick}
+          onDoubleClick={onDoubleClick}
+          onKeyDown={onKeyDown}
+          className={cn(
+            wrapperBase,
+            'group relative overflow-hidden rounded border cursor-pointer select-none',
+            'ring-2',
+            selected ? 'ring-blue-600' : viewing ? 'ring-gray-400' : STATUS_RING[page.status],
+            dragging && 'opacity-50',
+            dropBefore && 'outline outline-2 outline-blue-500 outline-offset-[-2px]',
+            dropAfter && 'outline outline-2 outline-blue-500 outline-offset-[-2px]',
+          )}
+        >
+          {src
+            ? <img src={src} alt="" className="w-full h-full object-cover" draggable={false} />
+            : <div className={cn('w-full h-full flex items-center justify-center', STATUS_BG[page.status])}>
+                <span className="text-gray-500">{missing ? t('thumb.placeholderTooltip') : '…'}</span>
+              </div>}
+          <span className="absolute top-0 left-0 px-1 bg-white/80 font-mono">{displayIndex + 1}</span>
+          {removeBtn}
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>{page.error ?? t(`pages.status.${page.status}`)}</TooltipContent>
+    </Tooltip>
   );
 }

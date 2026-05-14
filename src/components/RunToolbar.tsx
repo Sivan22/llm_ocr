@@ -9,6 +9,7 @@ import { hasApiKey } from '../ai/providers';
 import { parsePageRange } from '../lib/pageRange';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import type { ThumbMode } from './PageThumb';
 import { THUMB_VIEW_STORAGE_KEY } from './PageThumbs';
 import { cn } from '../lib/utils';
@@ -84,17 +85,21 @@ export function RunToolbar({ mode, onModeChange }: Props) {
             placeholder={t('batch.range.placeholder')}
             className="w-full pe-8"
           />
-          <button
-            type="button"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={highlight}
-            disabled={!canHighlight}
-            aria-label={t('batch.highlightInPreview')}
-            title={t('batch.highlightInPreview')}
-            className="absolute end-1 top-1/2 -translate-y-1/2 h-6 w-6 inline-flex items-center justify-center rounded text-gray-500 hover:text-gray-900 hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed"
-          >
-            <Check className="h-4 w-4" />
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={highlight}
+                disabled={!canHighlight}
+                aria-label={t('batch.highlightInPreview')}
+                className="absolute end-1 top-1/2 -translate-y-1/2 h-6 w-6 inline-flex items-center justify-center rounded text-gray-500 hover:text-gray-900 hover:bg-gray-100 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+              >
+                <Check className="h-4 w-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>{t('batch.highlightInPreview')}</TooltipContent>
+          </Tooltip>
         </div>
 
         <Button
@@ -119,12 +124,25 @@ export function RunToolbar({ mode, onModeChange }: Props) {
             <Square className="h-4 w-4 me-1 fill-current" />
             {t('batch.stop')}
           </Button>
+        ) : keyMissing ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span tabIndex={0} className="ms-2 inline-flex">
+                <Button disabled className="pointer-events-none">
+                  <Play className="h-4 w-4 me-1 fill-current" />
+                  {selectedPages.size > 0
+                    ? t('batch.runSelected', { n: selectedPages.size })
+                    : t('batch.run')}
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>{keyMissingMsg}</TooltipContent>
+          </Tooltip>
         ) : (
           <Button
             className="ms-2"
             onClick={runSelected}
-            disabled={selectedPages.size === 0 || keyMissing}
-            title={keyMissing ? keyMissingMsg : undefined}
+            disabled={selectedPages.size === 0}
           >
             <Play className="h-4 w-4 me-1 fill-current" />
             {selectedPages.size > 0
@@ -144,17 +162,20 @@ export function RunToolbar({ mode, onModeChange }: Props) {
             const Icon = VIEW_ICONS[m];
             const label = t(`view.${m}`);
             return (
-              <Button
-                key={m}
-                variant={mode === m ? 'default' : 'outline'}
-                aria-pressed={mode === m}
-                aria-label={label}
-                title={label}
-                onClick={() => onModeChange(m)}
-                className="h-8 w-8 p-0"
-              >
-                <Icon className="h-4 w-4" />
-              </Button>
+              <Tooltip key={m}>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={mode === m ? 'default' : 'outline'}
+                    aria-pressed={mode === m}
+                    aria-label={label}
+                    onClick={() => onModeChange(m)}
+                    className="h-8 w-8 p-0"
+                  >
+                    <Icon className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{label}</TooltipContent>
+              </Tooltip>
             );
           })}
         </div>

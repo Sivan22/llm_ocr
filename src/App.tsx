@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
+import { TooltipProvider } from './components/ui/tooltip';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { I18nProvider, useI18n } from './i18n/I18nContext';
 import { SettingsProvider } from './store/SettingsContext';
@@ -90,7 +91,9 @@ export default function App() {
       <ErrorBoundary>
         <SettingsProvider>
           <ProjectProvider>
-            <AppShell />
+            <TooltipProvider delayDuration={200}>
+              <AppShell />
+            </TooltipProvider>
           </ProjectProvider>
         </SettingsProvider>
       </ErrorBoundary>

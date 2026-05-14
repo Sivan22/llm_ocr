@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
+import { MoveHorizontal, Maximize2 } from 'lucide-react';
 import { useProject } from '../store/ProjectContext';
 import { useI18n } from '../i18n/I18nContext';
 import { renderPageToPng, MissingPageImageError } from '../pdf/render';
 import { Button } from './ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 
 const ZOOM_MIN = 0.25;
 const ZOOM_MAX = 8;
@@ -76,6 +78,19 @@ export function PageImage() {
   };
 
   const reset = () => setTransform({ scale: 1, tx: 0, ty: 0 });
+
+  // Fit entire page inside the viewport (contain). Falls back to scale=1 until the
+  // image's natural size is known.
+  const fitPage = () => {
+    const el = viewportRef.current;
+    const nat = naturalRef.current;
+    if (!el || !nat.w) { reset(); return; }
+    const vw = el.clientWidth;
+    const vh = el.clientHeight;
+    const baseH = (nat.h / nat.w) * vw;
+    const scale = Math.min(1, vh / baseH);
+    setTransform({ scale, tx: 0, ty: 0 });
+  };
 
   // Load page image; reset transform.
   useEffect(() => {
@@ -174,10 +189,35 @@ export function PageImage() {
   return (
     <div className="space-y-1">
       <div className="flex items-center gap-1">
-        <Button variant="outline" size="sm" onClick={() => zoomByCenter(1 / ZOOM_STEP)} aria-label={t('image.zoomOut')} title={t('image.zoomOut')}>−</Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" onClick={() => zoomByCenter(1 / ZOOM_STEP)} aria-label={t('image.zoomOut')}>−</Button>
+          </TooltipTrigger>
+          <TooltipContent>{t('image.zoomOut')}</TooltipContent>
+        </Tooltip>
         <span className="text-xs text-gray-600 w-12 text-center tabular-nums">{zoomPct}%</span>
-        <Button variant="outline" size="sm" onClick={() => zoomByCenter(ZOOM_STEP)} aria-label={t('image.zoomIn')} title={t('image.zoomIn')}>+</Button>
-        <Button variant="outline" size="sm" onClick={reset} title={t('image.fit')}>{t('image.fit')}</Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" onClick={() => zoomByCenter(ZOOM_STEP)} aria-label={t('image.zoomIn')}>+</Button>
+          </TooltipTrigger>
+          <TooltipContent>{t('image.zoomIn')}</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" onClick={reset} aria-label={t('image.fit')} className="h-8 w-8 p-0">
+              <MoveHorizontal className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{t('image.fit')}</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" onClick={fitPage} aria-label={t('image.fill')} className="h-8 w-8 p-0">
+              <Maximize2 className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{t('image.fill')}</TooltipContent>
+        </Tooltip>
       </div>
       <div
         ref={viewportRef}

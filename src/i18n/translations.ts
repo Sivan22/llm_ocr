@@ -111,6 +111,7 @@ const en: Dict = {
   'image.zoomOut': 'Zoom out',
   'image.reset': 'Reset',
   'image.fit': 'Fit width',
+  'image.fill': 'Fit page',
 
   // PromptEditor
   'prompt.useFor': 'Use {placeholder} for current page text',
@@ -284,6 +285,7 @@ const he: Dict = {
   'image.zoomOut': 'הקטן',
   'image.reset': 'איפוס',
   'image.fit': 'התאם לרוחב',
+  'image.fill': 'מלא',
 
   // PromptEditor
   'prompt.useFor': 'השתמש ב-{placeholder} לטקסט העמוד הנוכחי',

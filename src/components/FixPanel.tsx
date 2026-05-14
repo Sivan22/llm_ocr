@@ -12,6 +12,7 @@ import type { FixMode } from '../lib/types';
 import { DiffCard } from './DiffCard';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 
 const MODES: FixMode[] = ['general', 'headers', 'punctuation', 'custom'];
 
@@ -175,14 +176,29 @@ export function FixPanel() {
         className="font-mono text-xs"
         placeholder={t('fix.promptPlaceholder')}
       />
-      <Button
-        onClick={run}
-        disabled={running || !prompt.trim() || !hasApiKey(settings)}
-        className="text-xs"
-        title={!hasApiKey(settings) ? t('batch.apiKeyMissing', { provider: t(`route.${settings.route}`) }) : undefined}
-      >
-        {running ? t('fix.running') : t('fix.run')}
-      </Button>
+      {!hasApiKey(settings) ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span tabIndex={0} className="inline-flex">
+              <Button
+                disabled
+                className="text-xs pointer-events-none"
+              >
+                {running ? t('fix.running') : t('fix.run')}
+              </Button>
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>{t('batch.apiKeyMissing', { provider: t(`route.${settings.route}`) })}</TooltipContent>
+        </Tooltip>
+      ) : (
+        <Button
+          onClick={run}
+          disabled={running || !prompt.trim()}
+          className="text-xs"
+        >
+          {running ? t('fix.running') : t('fix.run')}
+        </Button>
+      )}
       {!hasApiKey(settings) && (
         <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
           {t('batch.apiKeyMissing', { provider: t(`route.${settings.route}`) })}
