@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState, type R
 import type { PageResult, Status, Correction } from '../lib/types';
 import type { LoadedDoc } from '../pdf/render';
 import { combine, imagesAsDoc, openPdf, readFileBytes } from '../pdf/render';
+import { prerenderAllPages } from '../pdf/prerender';
 import { sha256 } from '../pdf/hash';
 import { loadCorrections, saveCorrections } from './correctionsStore';
 import { rekeyJob, pruneJobs, updateJobPageOrder } from './jobs';
@@ -110,6 +111,15 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
       console.warn('ProjectContext: updateJobPageOrder failed', err);
     });
   }, [fileHash, pageOrder]);
+
+  useEffect(() => {
+    if (!loadedDoc || !fileHash) return;
+    const ac = new AbortController();
+    prerenderAllPages(loadedDoc, fileHash, ac.signal).catch((err) => {
+      if (!ac.signal.aborted) console.warn('ProjectContext: prerender failed', err);
+    });
+    return () => ac.abort();
+  }, [loadedDoc, fileHash]);
 
   const setProject: Ctx['setProject'] = ({ doc, fileHash, fileName, restored, bytes: nextBytes = null, pageOrder: restoredOrder }) => {
     setLoadedDoc(doc);
