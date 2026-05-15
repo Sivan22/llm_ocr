@@ -7,10 +7,11 @@ interface Props {
   value: string;
   onChange: (v: string) => void;
   placeholderHint?: string;
+  hint?: string;
   rows?: number;
 }
 
-export function PromptEditor({ label, value, onChange, placeholderHint, rows = 6 }: Props) {
+export function PromptEditor({ label, value, onChange, placeholderHint, hint, rows = 6 }: Props) {
   const { t } = useI18n();
   return (
     <div className="space-y-1">
@@ -22,6 +23,7 @@ export function PromptEditor({ label, value, onChange, placeholderHint, rows = 6
           </span>
         )}
       </div>
+      {hint && <p className="text-xs text-gray-500">{hint}</p>}
       <Textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}

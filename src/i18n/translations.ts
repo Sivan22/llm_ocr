@@ -27,8 +27,7 @@ const en: Dict = {
   'settings.apiKeyNote': "Stored in your browser's localStorage only. Never sent to a server.",
   'settings.batchSize': 'Batch Size — {n} pages in parallel',
   'settings.ocrPrompt': 'OCR Prompt',
-  'settings.correctionNote':
-    'Correction prompts (general / headers / punctuation / custom) are loaded as templates from the Editor tab.',
+  'settings.ocrPromptHint': 'Instructions sent to the model for transcribing each page image to text.',
   'settings.reset': 'Reset all settings to defaults',
 
   'route.anthropic': 'Anthropic',
@@ -201,8 +200,7 @@ const he: Dict = {
   'settings.apiKeyNote': 'נשמר רק ב-localStorage של הדפדפן שלך. לא נשלח לשרת.',
   'settings.batchSize': 'גודל אצווה — {n} עמודים במקביל',
   'settings.ocrPrompt': 'פרומפט OCR',
-  'settings.correctionNote':
-    'פרומפטי תיקון (כללי / כותרות / פיסוק / מותאם) נטענים כתבניות מטאב העריכה.',
+  'settings.ocrPromptHint': 'ההוראות שנשלחות למודל לתמלול כל תמונת עמוד לטקסט.',
   'settings.reset': 'אפס את כל ההגדרות לברירת מחדל',
 
   'route.anthropic': 'Anthropic',

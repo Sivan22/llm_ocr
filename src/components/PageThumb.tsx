@@ -34,7 +34,7 @@ const STATUS_RING: Record<PageResult['status'], string> = {
   running: 'ring-blue-400 animate-pulse',
   ok:      'ring-green-500',
   error:   'ring-red-500',
-  edited:  'ring-amber-500',
+  edited:  'ring-emerald-500',
 };
 
 const STATUS_BG: Record<PageResult['status'], string> = {
@@ -42,7 +42,7 @@ const STATUS_BG: Record<PageResult['status'], string> = {
   running: 'bg-blue-100',
   ok:      'bg-green-50',
   error:   'bg-red-50',
-  edited:  'bg-amber-50',
+  edited:  'bg-emerald-50',
 };
 
 export function PageThumb({

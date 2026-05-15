@@ -1,19 +1,13 @@
 // src/components/CollapsibleSettings.tsx
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useI18n } from '../i18n/I18nContext';
+import { useSettings } from '../store/SettingsContext';
 import { SettingsPanel } from './SettingsPanel';
-
-const STORAGE_KEY = 'llm_ocr_web:ocrSettingsOpen:v1';
 
 export function CollapsibleSettings() {
   const { t } = useI18n();
-  const [open, setOpen] = useState<boolean>(() => {
-    try { return localStorage.getItem(STORAGE_KEY) === '1'; } catch { return false; }
-  });
-
-  useEffect(() => {
-    try { localStorage.setItem(STORAGE_KEY, open ? '1' : '0'); } catch { /* ignore */ }
-  }, [open]);
+  const { settings } = useSettings();
+  const [open, setOpen] = useState<boolean>(() => !settings.apiKeys[settings.route]);
 
   return (
     <details

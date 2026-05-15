@@ -6,7 +6,6 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select } from './ui/select';
 import { Slider } from './ui/slider';
-import { PromptEditor } from './PromptEditor';
 
 const ROUTES: Route[] = ['anthropic', 'google', 'openai', 'gateway'];
 
@@ -24,8 +23,15 @@ const KEY_URLS: Record<Route, string> = {
   gateway: 'https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai-gateway%3FshowCreateKeyModal%26utm_source%3Dai_gateway_landing_page&title=Get+an+API+Key',
 };
 
+export const PROVIDER_BATCH_DEFAULTS: Record<Route, number> = {
+  google: 5,
+  anthropic: 10,
+  openai: 10,
+  gateway: 50,
+};
+
 export function SettingsPanel() {
-  const { settings, update, updateApiKeys, updatePrompts, reset } = useSettings();
+  const { settings, update, updateApiKeys, reset } = useSettings();
   const { t } = useI18n();
   const models = modelsForRoute(settings.route);
 
@@ -40,7 +46,11 @@ export function SettingsPanel() {
               const newRoute = e.target.value as Route;
               const validModels = modelsForRoute(newRoute);
               const nextModel = validModels.includes(settings.model) ? settings.model : (validModels[0] as Model);
-              update({ route: newRoute, model: nextModel });
+              update({
+                route: newRoute,
+                model: nextModel,
+                batchSize: PROVIDER_BATCH_DEFAULTS[newRoute],
+              });
             }}
           >
             {ROUTES.map((r) => (
@@ -90,12 +100,6 @@ export function SettingsPanel() {
           onChange={(e) => update({ batchSize: Number(e.target.value) })}
         />
       </div>
-
-      <PromptEditor label={t('settings.ocrPrompt')} value={settings.prompts.ocr} onChange={(v) => updatePrompts({ ocr: v })} rows={5} />
-
-      <p className="text-xs text-gray-500">
-        {t('settings.correctionNote')}
-      </p>
 
       <button onClick={reset} className="text-sm text-red-600 underline">{t('settings.reset')}</button>
     </div>

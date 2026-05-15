@@ -129,7 +129,7 @@ export function RunToolbar({ mode, onModeChange }: Props) {
             <TooltipTrigger asChild>
               <span tabIndex={0} className="ms-2 inline-flex">
                 <Button disabled className="pointer-events-none">
-                  <Play className="h-4 w-4 me-1 fill-current" />
+                  <Play className="h-4 w-4 me-1 fill-current rtl:-scale-x-100" />
                   {selectedPages.size > 0
                     ? t('batch.runSelected', { n: selectedPages.size })
                     : t('batch.run')}
@@ -144,7 +144,7 @@ export function RunToolbar({ mode, onModeChange }: Props) {
             onClick={runSelected}
             disabled={selectedPages.size === 0}
           >
-            <Play className="h-4 w-4 me-1 fill-current" />
+            <Play className="h-4 w-4 me-1 fill-current rtl:-scale-x-100" />
             {selectedPages.size > 0
               ? t('batch.runSelected', { n: selectedPages.size })
               : t('batch.run')}

@@ -13,6 +13,8 @@ import { MugahPromo } from './components/MugahPromo';
 import { CostSummary } from './components/CostSummary';
 import { DropStrip } from './components/DropStrip';
 import { CollapsibleSettings } from './components/CollapsibleSettings';
+import { PromptEditor } from './components/PromptEditor';
+import { useSettings } from './store/SettingsContext';
 import { RunToolbar } from './components/RunToolbar';
 import { RunLog } from './components/RunLog';
 import { PageThumbs, readSavedThumbMode } from './components/PageThumbs';
@@ -22,6 +24,7 @@ import type { ThumbMode } from './components/PageThumb';
 function AppShell() {
   const { t, lang } = useI18n();
   const { setCurrentPageNum } = useProject();
+  const { settings, updatePrompts } = useSettings();
   const dir = lang === 'he' ? 'rtl' : 'ltr';
   const [tab, setTab] = useState('ocr');
   const [thumbMode, setThumbMode] = useState<ThumbMode>(() => readSavedThumbMode());
@@ -47,6 +50,13 @@ function AppShell() {
             <div className="space-y-4">
               <DropStrip />
               <CollapsibleSettings />
+              <PromptEditor
+                label={t('settings.ocrPrompt')}
+                hint={t('settings.ocrPromptHint')}
+                value={settings.prompts.ocr}
+                onChange={(v) => updatePrompts({ ocr: v })}
+                rows={5}
+              />
               <RunToolbar mode={thumbMode} onModeChange={setThumbMode} />
               <PageThumbs mode={thumbMode} onOpenPage={(n) => { setCurrentPageNum(n); setTab('editor'); }} />
               <RunLog />
