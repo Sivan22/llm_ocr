@@ -152,7 +152,11 @@ const en: Dict = {
   // ExportPanel
   'export.building': 'Building DOCX…',
   'export.download': 'Download .docx',
-  'export.preview': 'Markdown preview',
+  'export.download_md': 'Download .md',
+  'export.preview_word': 'Word',
+  'export.preview_markdown': 'Markdown',
+  'export.rendering': 'Rendering preview…',
+  'export.preview_error': "Couldn't render preview. The .docx download still works.",
   'export.empty': '(no OCR\'d pages yet)',
 
   // JobsList
@@ -329,7 +333,11 @@ const he: Dict = {
   // ExportPanel
   'export.building': 'בונה DOCX…',
   'export.download': 'הורד .docx',
-  'export.preview': 'תצוגה מקדימה של Markdown',
+  'export.download_md': 'הורד .md',
+  'export.preview_word': 'Word',
+  'export.preview_markdown': 'Markdown',
+  'export.rendering': 'מציג תצוגה מקדימה…',
+  'export.preview_error': 'לא ניתן להציג תצוגה מקדימה. הורדת ה-.docx עדיין פועלת.',
   'export.empty': '(אין עדיין עמודים שעברו OCR)',
 
   // JobsList
