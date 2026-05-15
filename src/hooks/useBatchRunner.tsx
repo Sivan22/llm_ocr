@@ -1,4 +1,4 @@
-import { createContext, useContext, useRef, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useProject } from '../store/ProjectContext';
 import { useSettings } from '../store/SettingsContext';
 import { useI18n } from '../i18n/I18nContext';
@@ -7,6 +7,7 @@ import { ocrPage } from '../ai/ocr';
 import { renderPageToPng } from '../pdf/render';
 import { savePageResult } from '../store/persistence';
 import { savePageImage } from '../store/pageImagesStore';
+import { loadRunLog, saveRunLog } from '../store/runLogStore';
 import { runBatch } from '../runner/orchestrator';
 
 interface BatchRunnerApi {
@@ -27,6 +28,32 @@ export function BatchRunnerProvider({ children }: { children: ReactNode }) {
   const [running, setRunning] = useState(false);
   const [log, setLog] = useState<string[]>([]);
   const abortRef = useRef<AbortController | null>(null);
+  // Tracks the hash whose log has been hydrated into `log`. Save effect waits
+  // for this so it doesn't overwrite stored logs with `[]` between switching
+  // hashes and the async load resolving.
+  const loadedLogForHash = useRef<string>('');
+
+  useEffect(() => {
+    if (!fileHash) {
+      loadedLogForHash.current = '';
+      setLog([]);
+      return;
+    }
+    loadedLogForHash.current = '';
+    let cancelled = false;
+    loadRunLog(fileHash).then((arr) => {
+      if (cancelled) return;
+      setLog(arr);
+      loadedLogForHash.current = fileHash;
+    });
+    return () => { cancelled = true; };
+  }, [fileHash]);
+
+  useEffect(() => {
+    if (!fileHash) return;
+    if (loadedLogForHash.current !== fileHash) return;
+    saveRunLog(fileHash, log);
+  }, [fileHash, log]);
 
   const append = (m: string) => setLog((l) => [...l, m]);
 

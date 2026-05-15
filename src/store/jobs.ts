@@ -3,6 +3,7 @@ import {
   STORE_JOBS,
   STORE_CORRECTIONS,
   STORE_PAGE_IMAGES,
+  STORE_RUN_LOGS,
   pageRangeFor,
 } from './persistence';
 
@@ -80,10 +81,11 @@ export async function deleteJob(fileHash: string): Promise<void> {
   try {
     const d = await db();
     const tx = d.transaction(
-      [STORE_JOBS, STORE_PAGE_RESULTS, STORE_CORRECTIONS, STORE_PAGE_IMAGES],
+      [STORE_JOBS, STORE_PAGE_RESULTS, STORE_CORRECTIONS, STORE_PAGE_IMAGES, STORE_RUN_LOGS],
       'readwrite',
     );
     await tx.objectStore(STORE_JOBS).delete(fileHash);
+    await tx.objectStore(STORE_RUN_LOGS).delete(fileHash);
     for (const store of [STORE_PAGE_RESULTS, STORE_CORRECTIONS, STORE_PAGE_IMAGES] as const) {
       let cur = await tx.objectStore(store).openCursor(pageRangeFor(fileHash));
       while (cur) {
@@ -131,7 +133,7 @@ export async function rekeyJob(input: RekeyJobInput): Promise<JobRecord> {
   }
 
   const tx = d.transaction(
-    [STORE_JOBS, STORE_PAGE_RESULTS, STORE_CORRECTIONS, STORE_PAGE_IMAGES],
+    [STORE_JOBS, STORE_PAGE_RESULTS, STORE_CORRECTIONS, STORE_PAGE_IMAGES, STORE_RUN_LOGS],
     'readwrite',
   );
 
@@ -149,6 +151,13 @@ export async function rekeyJob(input: RekeyJobInput): Promise<JobRecord> {
       await cur.delete();
       cur = await cur.continue();
     }
+  }
+
+  const logsStore = tx.objectStore(STORE_RUN_LOGS);
+  const carriedLog = await logsStore.get(oldHash);
+  if (carriedLog !== undefined) {
+    await logsStore.put(carriedLog, newHash);
+    await logsStore.delete(oldHash);
   }
 
   const next: JobRecord = {

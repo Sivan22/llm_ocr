@@ -26,6 +26,7 @@ export function FixPanel() {
   const [running, setRunning] = useState(false);
   const [status, setStatus] = useState('');
   const [prompt, setPrompt] = useState<string>(() => settings.prompts.general);
+  const [promptOpen, setPromptOpen] = useState<boolean>(() => corrections.length === 0);
 
   useEffect(() => {
     setStatus('');
@@ -61,7 +62,8 @@ export function FixPanel() {
       savePageImage(fileHash, currentPageNum, img);
       const filled = substitute(prompt, { text: page.text });
       const { corrections: result, tokensIn, tokensOut } = await correctPage(model, img.dataUrl, filled, lang);
-      setCorrections(result);
+      setCorrections((prev) => [...prev, ...result]);
+      if (result.length > 0) setPromptOpen(false);
       if ((tokensIn ?? 0) > 0 || (tokensOut ?? 0) > 0) {
         const updated = {
           ...page,
@@ -98,6 +100,10 @@ export function FixPanel() {
 
   const reject = (id: string) => {
     setCorrections((arr) => arr.map((x) => (x.id === id ? { ...x, status: 'rejected' } : x)));
+  };
+
+  const removeCorrection = (id: string) => {
+    setCorrections((arr) => arr.filter((x) => x.id !== id));
   };
 
   const restore = (id: string) => {
@@ -162,52 +168,63 @@ export function FixPanel() {
   return (
     <div className="flex flex-col h-[70vh] space-y-2 overflow-auto">
       <h3 className="font-bold">{t('fix.title')}</h3>
-      <div>
-        <div className="text-xs text-gray-500 mb-1">{t('fix.loadTemplate')}</div>
-        <div className="flex flex-wrap gap-1">
-          {MODES.map((m) => (
+      <details
+        open={promptOpen}
+        onToggle={(e) => setPromptOpen((e.target as HTMLDetailsElement).open)}
+        className="border rounded-md"
+      >
+        <summary className="cursor-pointer select-none px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+          {t('fix.editPrompt')}
+        </summary>
+        <div className="px-3 py-3 border-t space-y-2">
+          <div>
+            <div className="text-xs text-gray-500 mb-1">{t('fix.loadTemplate')}</div>
+            <div className="flex flex-wrap gap-1">
+              {MODES.map((m) => (
+                <Button
+                  key={m}
+                  onClick={() => loadTemplate(m)}
+                  variant="outline"
+                  className="text-xs h-7 px-2"
+                  disabled={running}
+                >
+                  {t(`mode.${m}`)}
+                </Button>
+              ))}
+            </div>
+          </div>
+          <Textarea
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            rows={6}
+            className="font-mono text-xs"
+            placeholder={t('fix.promptPlaceholder')}
+          />
+          {!hasApiKey(settings) ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span tabIndex={0} className="inline-flex">
+                  <Button
+                    disabled
+                    className="text-xs pointer-events-none"
+                  >
+                    {running ? t('fix.running') : t('fix.run')}
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>{t('batch.apiKeyMissing', { provider: t(`route.${settings.route}`) })}</TooltipContent>
+            </Tooltip>
+          ) : (
             <Button
-              key={m}
-              onClick={() => loadTemplate(m)}
-              variant="outline"
-              className="text-xs h-7 px-2"
-              disabled={running}
+              onClick={run}
+              disabled={running || !prompt.trim()}
+              className="text-xs"
             >
-              {t(`mode.${m}`)}
+              {running ? t('fix.running') : t('fix.run')}
             </Button>
-          ))}
+          )}
         </div>
-      </div>
-      <Textarea
-        value={prompt}
-        onChange={(e) => setPrompt(e.target.value)}
-        rows={6}
-        className="font-mono text-xs"
-        placeholder={t('fix.promptPlaceholder')}
-      />
-      {!hasApiKey(settings) ? (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span tabIndex={0} className="inline-flex">
-              <Button
-                disabled
-                className="text-xs pointer-events-none"
-              >
-                {running ? t('fix.running') : t('fix.run')}
-              </Button>
-            </span>
-          </TooltipTrigger>
-          <TooltipContent>{t('batch.apiKeyMissing', { provider: t(`route.${settings.route}`) })}</TooltipContent>
-        </Tooltip>
-      ) : (
-        <Button
-          onClick={run}
-          disabled={running || !prompt.trim()}
-          className="text-xs"
-        >
-          {running ? t('fix.running') : t('fix.run')}
-        </Button>
-      )}
+      </details>
       {!hasApiKey(settings) && (
         <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
           {t('batch.apiKeyMissing', { provider: t(`route.${settings.route}`) })}
@@ -234,6 +251,7 @@ export function FixPanel() {
             onAccept={accept}
             onReject={reject}
             onRestore={restore}
+            onDelete={removeCorrection}
           />
         ))}
       </div>

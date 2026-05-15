@@ -2,11 +2,12 @@ import { openDB, type IDBPDatabase } from 'idb';
 import type { PageResult } from '../lib/types';
 
 const DB_NAME = 'llm_ocr_web';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const STORE_PAGE_RESULTS = 'pageResults';
 export const STORE_JOBS = 'jobs';
 export const STORE_CORRECTIONS = 'corrections';
 export const STORE_PAGE_IMAGES = 'pageImages';
+export const STORE_RUN_LOGS = 'runLogs';
 
 let dbPromise: Promise<IDBPDatabase> | null = null;
 
@@ -25,6 +26,9 @@ export function db(): Promise<IDBPDatabase> {
         }
         if (!database.objectStoreNames.contains(STORE_PAGE_IMAGES)) {
           database.createObjectStore(STORE_PAGE_IMAGES);
+        }
+        if (!database.objectStoreNames.contains(STORE_RUN_LOGS)) {
+          database.createObjectStore(STORE_RUN_LOGS);
         }
       },
     });

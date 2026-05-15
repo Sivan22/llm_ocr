@@ -4,6 +4,7 @@ import { upsertJob, listJobs, getJob, deleteJob, pruneJobs, rekeyJob, updateJobP
 import { savePageResult, loadAllPageResults } from './persistence';
 import { saveCorrections, loadCorrections } from './correctionsStore';
 import { savePageImage, loadPageImage } from './pageImagesStore';
+import { saveRunLog, loadRunLog } from './runLogStore';
 
 const A = 'aaaa';
 const B = 'bbbb';
@@ -47,11 +48,12 @@ describe('jobs store', () => {
     expect(ids).toEqual([C, B, A]);
   });
 
-  it('deleteJob cascades to pageResults, corrections, pageImages', async () => {
+  it('deleteJob cascades to pageResults, corrections, pageImages, runLogs', async () => {
     await upsertJob({ fileHash: A, fileName: 'a', pageCount: 2 });
     await savePageResult(A, { pageNum: 0, text: 'x', status: 'ok' });
     await saveCorrections(A, 0, [{ id: '1', old: 'a', new: 'b', reason: '', status: 'pending' }]);
     await savePageImage(A, 0, { dataUrl: 'data:,', mediaType: 'image/png' });
+    await saveRunLog(A, ['ran page 1']);
 
     await deleteJob(A);
 
@@ -59,6 +61,7 @@ describe('jobs store', () => {
     expect(await loadAllPageResults(A)).toEqual([]);
     expect(await loadCorrections(A, 0)).toEqual([]);
     expect(await loadPageImage(A, 0)).toBeUndefined();
+    expect(await loadRunLog(A)).toEqual([]);
   });
 
   it('pruneJobs keeps newest N by lastOpenedAt', async () => {
@@ -76,12 +79,13 @@ describe('jobs store', () => {
 describe('rekeyJob', () => {
   beforeEach(reset);
 
-  it('moves pageResults, corrections, pageImages from oldHash to newHash and updates the Job row', async () => {
+  it('moves pageResults, corrections, pageImages, runLogs from oldHash to newHash and updates the Job row', async () => {
     await upsertJob({ fileHash: A, fileName: 'a.pdf', pageCount: 2 });
     await savePageResult(A, { pageNum: 0, text: 'one', status: 'ok' });
     await savePageResult(A, { pageNum: 1, text: 'two', status: 'edited' });
     await saveCorrections(A, 0, [{ id: 'c1', old: 'a', new: 'b', reason: 'r', status: 'pending' }]);
     await savePageImage(A, 0, { dataUrl: 'data:image/png;base64,AAA', mediaType: 'image/png' });
+    await saveRunLog(A, ['page 1 ok', 'page 2 ok']);
 
     await rekeyJob({ oldHash: A, newHash: B, fileName: 'a+b.pdf', pageCount: 5 });
 
@@ -89,6 +93,7 @@ describe('rekeyJob', () => {
     expect(await loadAllPageResults(A)).toEqual([]);
     expect(await loadCorrections(A, 0)).toEqual([]);
     expect(await loadPageImage(A, 0)).toBeUndefined();
+    expect(await loadRunLog(A)).toEqual([]);
     expect(await getJob(A)).toBeUndefined();
 
     // New hash has everything.
@@ -96,6 +101,7 @@ describe('rekeyJob', () => {
     expect(restored.map((p) => p.pageNum)).toEqual([0, 1]);
     expect((await loadCorrections(B, 0)).length).toBe(1);
     expect((await loadPageImage(B, 0))?.dataUrl).toContain('AAA');
+    expect(await loadRunLog(B)).toEqual(['page 1 ok', 'page 2 ok']);
     const nj = await getJob(B);
     expect(nj?.fileName).toBe('a+b.pdf');
     expect(nj?.pageCount).toBe(5);
