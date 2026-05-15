@@ -184,7 +184,7 @@ const en: Dict = {
 
 const he: Dict = {
   // App shell
-  'app.title': 'OCR בינה מלאכותית — טקסטים יהודיים',
+  'app.title': 'OCR תורני מתקדם',
   'tabs.ocr': 'OCR',
   'tabs.editor': 'עריכה',
   'tabs.export': 'ייצוא',
@@ -293,7 +293,7 @@ const he: Dict = {
   'prompt.useFor': 'השתמש ב-{placeholder} לטקסט העמוד הנוכחי',
 
   // FixPanel
-  'fix.title': 'תיקון בינה מלאכותית',
+  'fix.title': 'הגהה אוטומטית',
   'fix.loadTemplate': 'טען תבנית:',
   'fix.loadedTemplate': 'תבנית "{name}" נטענה.',
   'fix.run': 'הפעל',
