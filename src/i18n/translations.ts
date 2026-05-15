@@ -157,6 +157,7 @@ const en: Dict = {
   'export.preview_markdown': 'Markdown',
   'export.rendering': 'Rendering preview…',
   'export.preview_error': "Couldn't render preview. The .docx download still works.",
+  'export.toc': 'Contents',
   'export.empty': '(no OCR\'d pages yet)',
 
   // JobsList
@@ -338,6 +339,7 @@ const he: Dict = {
   'export.preview_markdown': 'Markdown',
   'export.rendering': 'מציג תצוגה מקדימה…',
   'export.preview_error': 'לא ניתן להציג תצוגה מקדימה. הורדת ה-.docx עדיין פועלת.',
+  'export.toc': 'תוכן עניינים',
   'export.empty': '(אין עדיין עמודים שעברו OCR)',
 
   // JobsList

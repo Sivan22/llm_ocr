@@ -1,8 +1,26 @@
-import { Document, HeadingLevel, Packer, Paragraph, TextRun, AlignmentType } from 'docx';
+import {
+  Document,
+  FootnoteReferenceRun,
+  HeadingLevel,
+  Packer,
+  Paragraph,
+  TextRun,
+  AlignmentType,
+} from 'docx';
 import { marked, type Token, type Tokens } from 'marked';
+import { parsePageFootnotes, FOOTNOTE_MARKER } from './markdown';
+
+type ParagraphChild = TextRun | FootnoteReferenceRun;
+
+interface RenderContext {
+  nextFootnoteId: number;
+  totalFootnotes: number;
+}
 
 export async function mdToDocxBlob(md: string): Promise<Blob> {
-  const tokens = marked.lexer(md);
+  const { body, footnotes } = parsePageFootnotes(md);
+  const ctx: RenderContext = { nextFootnoteId: 1, totalFootnotes: footnotes.length };
+  const tokens = marked.lexer(body);
   const children: Paragraph[] = [];
 
   for (const tok of tokens) {
@@ -13,7 +31,10 @@ export async function mdToDocxBlob(md: string): Promise<Blob> {
           alignment: AlignmentType.START,
           bidirectional: true,
           heading: headingLevelFor(heading.depth),
-          children: inlineRuns(heading.tokens ?? [{ type: 'text', text: heading.text, raw: heading.text } as Token]),
+          children: inlineRuns(
+            heading.tokens ?? [{ type: 'text', text: heading.text, raw: heading.text } as Token],
+            ctx,
+          ),
         }),
       );
     } else if (tok.type === 'paragraph') {
@@ -22,23 +43,39 @@ export async function mdToDocxBlob(md: string): Promise<Blob> {
         new Paragraph({
           alignment: AlignmentType.START,
           bidirectional: true,
-          children: inlineRuns(para.tokens ?? []),
+          children: inlineRuns(para.tokens ?? [], ctx),
         }),
       );
     } else if (tok.type === 'space') {
       // skip
-    } else if ('text' in tok && typeof (tok as any).text === 'string') {
+    } else if ('text' in tok && typeof (tok as { text?: unknown }).text === 'string') {
       children.push(
         new Paragraph({
           alignment: AlignmentType.START,
           bidirectional: true,
-          children: [new TextRun({ text: decodeEntities((tok as any).text as string) })],
+          children: textWithFootnotes(decodeEntities((tok as { text: string }).text), false, false, ctx),
         }),
       );
     }
   }
 
-  const doc = new Document({ sections: [{ children }] });
+  const footnotesMap: Record<string, { children: Paragraph[] }> = {};
+  footnotes.forEach((note, idx) => {
+    footnotesMap[String(idx + 1)] = {
+      children: [
+        new Paragraph({
+          alignment: AlignmentType.START,
+          bidirectional: true,
+          children: [new TextRun({ text: decodeEntities(note) })],
+        }),
+      ],
+    };
+  });
+
+  const doc = new Document({
+    sections: [{ children }],
+    footnotes: footnotes.length > 0 ? footnotesMap : undefined,
+  });
   return Packer.toBlob(doc);
 }
 
@@ -53,37 +90,63 @@ function headingLevelFor(depth: number): (typeof HeadingLevel)[keyof typeof Head
   }
 }
 
-function inlineRuns(tokens: Token[]): TextRun[] {
-  const runs: TextRun[] = [];
+function inlineRuns(tokens: Token[], ctx: RenderContext): ParagraphChild[] {
+  const runs: ParagraphChild[] = [];
   for (const t of tokens) {
-    runs.push(...runsForToken(t, false));
+    runs.push(...runsForToken(t, false, false, ctx));
   }
   if (runs.length === 0) runs.push(new TextRun({ text: '' }));
   return runs;
 }
 
-function runsForToken(t: Token, bold: boolean, italic: boolean = false): TextRun[] {
+function runsForToken(t: Token, bold: boolean, italic: boolean, ctx: RenderContext): ParagraphChild[] {
   if (t.type === 'text') {
-    return [new TextRun({ text: decodeEntities((t as Tokens.Text).text), bold: bold || undefined, italics: italic || undefined })];
+    return textWithFootnotes(decodeEntities((t as Tokens.Text).text), bold, italic, ctx);
   }
   if (t.type === 'strong') {
     const inner = (t as Tokens.Strong).tokens ?? [];
-    return inner.flatMap((x) => runsForToken(x, true, italic));
+    return inner.flatMap((x) => runsForToken(x, true, italic, ctx));
   }
   if (t.type === 'em') {
     const inner = (t as Tokens.Em).tokens ?? [];
-    return inner.flatMap((x) => runsForToken(x, bold, true));
+    return inner.flatMap((x) => runsForToken(x, bold, true, ctx));
   }
   if (t.type === 'codespan') {
-    return [new TextRun({ text: decodeEntities((t as Tokens.Codespan).text), bold: bold || undefined, italics: italic || undefined })];
+    return textWithFootnotes(decodeEntities((t as Tokens.Codespan).text), bold, italic, ctx);
   }
   if (t.type === 'br') {
     return [new TextRun({ text: '', break: 1 })];
   }
-  if ('raw' in t && typeof (t as any).raw === 'string') {
-    return [new TextRun({ text: decodeEntities((t as any).raw as string), bold: bold || undefined, italics: italic || undefined })];
+  if ('raw' in t && typeof (t as { raw?: unknown }).raw === 'string') {
+    return textWithFootnotes(decodeEntities((t as { raw: string }).raw), bold, italic, ctx);
   }
   return [];
+}
+
+function textWithFootnotes(text: string, bold: boolean, italic: boolean, ctx: RenderContext): ParagraphChild[] {
+  if (!text) return [];
+  const runs: ParagraphChild[] = [];
+  let i = 0;
+  while (i < text.length) {
+    const next = text.indexOf(FOOTNOTE_MARKER, i);
+    if (next === -1) {
+      runs.push(makeTextRun(text.slice(i), bold, italic));
+      break;
+    }
+    if (next > i) runs.push(makeTextRun(text.slice(i, next), bold, italic));
+    if (ctx.nextFootnoteId <= ctx.totalFootnotes) {
+      runs.push(new FootnoteReferenceRun(ctx.nextFootnoteId));
+      ctx.nextFootnoteId += 1;
+    } else {
+      runs.push(makeTextRun(FOOTNOTE_MARKER, bold, italic));
+    }
+    i = next + FOOTNOTE_MARKER.length;
+  }
+  return runs;
+}
+
+function makeTextRun(text: string, bold: boolean, italic: boolean): TextRun {
+  return new TextRun({ text, bold: bold || undefined, italics: italic || undefined });
 }
 
 function decodeEntities(s: string): string {
