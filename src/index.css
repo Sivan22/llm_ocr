@@ -86,3 +86,12 @@ html, body, #root {
 .thumb-running {
   animation: thumb-running-glow 1.4s ease-in-out infinite;
 }
+
+.export-word-preview .docx-wrapper,
+.export-word-preview .docx-wrapper > section.docx,
+.export-word-preview article.docx,
+.export-word-preview .docx p {
+  direction: rtl;
+  text-align: right;
+  unicode-bidi: embed;
+}

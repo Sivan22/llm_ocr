@@ -104,7 +104,7 @@ export function ExportPanel() {
               <div
                 ref={containerRef}
                 dir="rtl"
-                className="border rounded p-2 max-h-[60vh] overflow-auto bg-white"
+                className="export-word-preview border rounded p-2 max-h-[60vh] overflow-auto bg-white"
               />
             </div>
           )}
