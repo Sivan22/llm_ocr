@@ -12,13 +12,17 @@ export function CostSummary() {
   let cost = 0;
   try { cost = estimateCost(settings.model, { tokensIn: totalIn, tokensOut: totalOut }); }
   catch { cost = 0; }
+  const inStr = totalIn.toLocaleString();
+  const outStr = totalOut.toLocaleString();
+  const costStr = cost.toFixed(4);
+  const fullText = t('cost.estimated', { in: inStr, out: outStr, cost: costStr });
   return (
-    <div className="text-xs text-gray-600 border rounded p-2 inline-block">
-      {t('cost.estimated', {
-        in: totalIn.toLocaleString(),
-        out: totalOut.toLocaleString(),
-        cost: cost.toFixed(4),
-      })}
+    <div
+      className="text-xs text-gray-600 border rounded px-2 py-1 inline-flex items-center whitespace-nowrap"
+      title={fullText}
+    >
+      <span className="hidden md:inline">{fullText}</span>
+      <span className="md:hidden">${costStr}</span>
     </div>
   );
 }

@@ -56,13 +56,19 @@ function cryptoRandomId(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
+export interface CorrectPageResult {
+  corrections: Correction[];
+  tokensIn?: number;
+  tokensOut?: number;
+}
+
 export async function correctPage(
   model: LanguageModel,
   imageDataUrl: string,
   filledPrompt: string,
   lang: CorrectionLang = 'en',
   signal?: AbortSignal,
-): Promise<Correction[]> {
+): Promise<CorrectPageResult> {
   const res = await generateText({
     model,
     abortSignal: signal,
@@ -77,5 +83,9 @@ export async function correctPage(
       },
     ],
   });
-  return parseCorrections(res.text ?? '');
+  return {
+    corrections: parseCorrections(res.text ?? ''),
+    tokensIn: res.usage?.inputTokens,
+    tokensOut: res.usage?.outputTokens,
+  };
 }

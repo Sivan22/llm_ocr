@@ -123,7 +123,7 @@ export function DropStrip() {
           onDragLeave={() => setIsDragging(false)}
           onDrop={onDrop}
           className={cn(
-            'border-2 border-dashed rounded-lg p-12 text-center cursor-pointer select-none',
+            'border-2 border-dashed rounded-lg p-6 sm:p-12 text-center cursor-pointer select-none',
             isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400',
           )}
         >
@@ -155,11 +155,11 @@ export function DropStrip() {
         onDragLeave={() => setIsDragging(false)}
         onDrop={onDrop}
         className={cn(
-          'border border-dashed rounded-md px-3 py-2 flex justify-between items-center gap-3 cursor-pointer select-none text-sm',
+          'border border-dashed rounded-md px-3 py-2 flex flex-wrap justify-between items-center gap-x-3 gap-y-1 cursor-pointer select-none text-sm',
           isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400',
         )}
       >
-        <div className="truncate">
+        <div className="min-w-0 truncate flex-1">
           <span className="font-medium">{fileName}</span>
           <span className="text-gray-500"> · {t('drop.loaded.summary.pages', { pages: pageOrder.length })}</span>
           {nDone   > 0 && <span className="text-gray-500"> · {t('drop.loaded.summary.done',  { n: nDone   })}</span>}
@@ -167,7 +167,7 @@ export function DropStrip() {
           {nError  > 0 && <span className="text-red-600"> · {t('drop.loaded.summary.error', { n: nError  })}</span>}
         </div>
         <div className="flex items-center gap-3 text-gray-500 shrink-0">
-          <span>{t('drop.loaded.appendHint')}</span>
+          <span className="hidden sm:inline">{t('drop.loaded.appendHint')}</span>
           <button onClick={handleStartOver} className="text-red-600 underline-offset-2 hover:underline">
             {t('drop.loaded.startOver')}
           </button>

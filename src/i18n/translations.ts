@@ -111,6 +111,8 @@ const en: Dict = {
   'image.reset': 'Reset',
   'image.fit': 'Fit width',
   'image.fill': 'Fit page',
+  'image.prevPage': 'Previous page',
+  'image.nextPage': 'Next page',
 
   // PromptEditor
   'prompt.useFor': 'Use {placeholder} for current page text',
@@ -200,7 +202,7 @@ const he: Dict = {
   'settings.apiKeyNote': 'נשמר רק ב-localStorage של הדפדפן שלך. לא נשלח לשרת.',
   'settings.batchSize': 'גודל אצווה — {n} עמודים במקביל',
   'settings.ocrPrompt': 'פרומפט OCR',
-  'settings.ocrPromptHint': 'ההוראות שנשלחות למודל לתמלול כל תמונת עמוד לטקסט.',
+  'settings.ocrPromptHint': 'שנה את ההנחיות בהתאם לצורך, הנחיות מדוייקות יניבו תוצאות טובות יותר.',
   'settings.reset': 'אפס את כל ההגדרות לברירת מחדל',
 
   'route.anthropic': 'Anthropic',
@@ -284,6 +286,8 @@ const he: Dict = {
   'image.reset': 'איפוס',
   'image.fit': 'התאם לרוחב',
   'image.fill': 'מלא',
+  'image.prevPage': 'עמוד קודם',
+  'image.nextPage': 'עמוד הבא',
 
   // PromptEditor
   'prompt.useFor': 'השתמש ב-{placeholder} לטקסט העמוד הנוכחי',

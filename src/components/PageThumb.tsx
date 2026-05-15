@@ -31,7 +31,7 @@ interface Props {
 
 const STATUS_RING: Record<PageResult['status'], string> = {
   pending: 'ring-gray-300',
-  running: 'ring-blue-400 animate-pulse',
+  running: 'ring-blue-400',
   ok:      'ring-green-500',
   error:   'ring-red-500',
   edited:  'ring-emerald-500',
@@ -143,6 +143,8 @@ export function PageThumb({
     </Tooltip>
   );
 
+  const isRunning = page.status === 'running';
+
   if (mode === 'list') {
     return (
       <div
@@ -160,8 +162,12 @@ export function PageThumb({
         className={cn(
           'group relative flex items-center gap-3 px-2 py-1 rounded cursor-pointer select-none border',
           STATUS_BG[page.status],
-          selected ? 'ring-2 ring-blue-600' : 'ring-0',
-          viewing && !selected && 'ring-1 ring-gray-400',
+          selected
+            ? 'ring-2 ring-blue-600'
+            : isRunning
+            ? 'thumb-running'
+            : cn('ring-2', STATUS_RING[page.status]),
+          viewing && !selected && !isRunning && 'ring-offset-1 ring-offset-gray-400',
           dragging && 'opacity-50',
           dropBefore && 'border-t-2 border-t-blue-500',
           dropAfter && 'border-b-2 border-b-blue-500',
@@ -219,8 +225,12 @@ export function PageThumb({
           className={cn(
             wrapperBase,
             'group relative overflow-hidden rounded border cursor-pointer select-none',
-            'ring-2',
-            selected ? 'ring-blue-600' : viewing ? 'ring-gray-400' : STATUS_RING[page.status],
+            selected
+              ? 'ring-2 ring-blue-600'
+              : isRunning
+              ? 'thumb-running'
+              : cn('ring-2', STATUS_RING[page.status]),
+            viewing && !selected && !isRunning && 'ring-offset-2 ring-offset-gray-400',
             dragging && 'opacity-50',
             dropBefore && 'outline outline-2 outline-blue-500 outline-offset-[-2px]',
             dropAfter && 'outline outline-2 outline-blue-500 outline-offset-[-2px]',

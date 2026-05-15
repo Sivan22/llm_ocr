@@ -38,7 +38,7 @@ export function MugahPromo() {
       target="_blank"
       rel="noopener noreferrer"
       aria-label={t('mugah.aria')}
-      className="group inline-flex items-center gap-3 whitespace-nowrap rounded-lg border border-[rgba(59,130,246,0.4)] bg-[#09090b] px-4 py-2.5 text-[0.9rem] font-medium text-[#fafafa] no-underline transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:border-[#3b82f6] hover:shadow-[0_0_20px_rgba(59,130,246,0.4)]"
+      className="group inline-flex items-center gap-2 sm:gap-3 whitespace-nowrap rounded-lg border border-[rgba(59,130,246,0.4)] bg-[#09090b] px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-[0.9rem] font-medium text-[#fafafa] no-underline transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:border-[#3b82f6] hover:shadow-[0_0_20px_rgba(59,130,246,0.4)]"
     >
       <span
         className="bg-gradient-to-br from-[#fafafa] to-[#3b82f6] bg-clip-text font-semibold tracking-tight text-transparent"
@@ -46,10 +46,10 @@ export function MugahPromo() {
       >
         {t('mugah.brand')}
       </span>
-      <span className="text-[rgba(59,130,246,0.5)]" aria-hidden="true">
+      <span className="hidden sm:inline text-[rgba(59,130,246,0.5)]" aria-hidden="true">
         ·
       </span>
-      <span style={{ fontFamily }}>{t('mugah.tagline')}</span>
+      <span className="hidden sm:inline" style={{ fontFamily }}>{t('mugah.tagline')}</span>
       <span
         className={`transition-transform duration-300 ${arrowHoverShift}`}
         aria-hidden="true"

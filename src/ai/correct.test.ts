@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { parseCorrections } from './correct';
+import { MockLanguageModelV3 } from 'ai/test';
+import { correctPage, parseCorrections } from './correct';
 
 describe('parseCorrections', () => {
   it('parses clean JSON array', () => {
@@ -47,5 +48,26 @@ describe('parseCorrections', () => {
   it('defaults missing reason to empty string', () => {
     const out = parseCorrections('[{"old":"a","new":"b"}]');
     expect(out[0].reason).toBe('');
+  });
+});
+
+describe('correctPage', () => {
+  it('returns parsed corrections plus token usage', async () => {
+    const fakeModel = new MockLanguageModelV3({
+      doGenerate: (async () => ({
+        content: [{ type: 'text' as const, text: '[{"old":"a","new":"b","reason":"r"}]' }],
+        usage: {
+          inputTokens: { total: 800, noCache: 0, cacheRead: 0, cacheWrite: 0 },
+          outputTokens: { total: 12, text: 12, reasoning: 0 },
+        },
+        finishReason: 'stop' as const,
+        warnings: [],
+      })) as never,
+    });
+    const out = await correctPage(fakeModel, 'data:image/png;base64,XXX', 'fix this');
+    expect(out.corrections).toHaveLength(1);
+    expect(out.corrections[0]).toMatchObject({ old: 'a', new: 'b' });
+    expect(out.tokensIn).toBe(800);
+    expect(out.tokensOut).toBe(12);
   });
 });

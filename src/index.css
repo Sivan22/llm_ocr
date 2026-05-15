@@ -73,3 +73,16 @@ html, body, #root {
   animation: cid-flash-keys 1.4s ease-out;
   border-radius: 0.25rem;
 }
+
+@keyframes thumb-running-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5), 0 0 6px 1px rgba(59, 130, 246, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 1), 0 0 16px 3px rgba(59, 130, 246, 0.7);
+  }
+}
+
+.thumb-running {
+  animation: thumb-running-glow 1.4s ease-in-out infinite;
+}

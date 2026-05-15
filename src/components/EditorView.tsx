@@ -11,32 +11,19 @@ import { PageImage } from './PageImage';
 import { InlineDiffEditor } from './InlineDiffEditor';
 import { FixPanel } from './FixPanel';
 import { Button } from './ui/button';
-import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 
 export function EditorView() {
   const {
-    loadedDoc, fileHash, currentPageNum, setCurrentPageNum,
-    pages, pageOrder, setPage, setPageStatus, setCorrections,
+    loadedDoc, fileHash, currentPageNum,
+    pages, setPage, setPageStatus, setCorrections,
   } = useProject();
   const { settings, updatePrompts } = useSettings();
-  const { t, lang } = useI18n();
-  const isRtl = lang === 'he';
-  const prevArrow = isRtl ? '→' : '←';
-  const nextArrow = isRtl ? '←' : '→';
+  const { t } = useI18n();
 
-  const total = pageOrder.length;
-  const currentIdx = pageOrder.indexOf(currentPageNum);
-  const displayPos = currentIdx >= 0 ? currentIdx + 1 : 0;
-
-  const [pageInput, setPageInput] = useState(String(displayPos || 1));
   const [showPrompt, setShowPrompt] = useState(false);
   const [running, setRunning] = useState(false);
   const [status, setStatus] = useState('');
-
-  useEffect(() => {
-    setPageInput(String(displayPos || 1));
-  }, [displayPos]);
 
   useEffect(() => {
     setStatus('');
@@ -45,23 +32,6 @@ export function EditorView() {
   if (!loadedDoc) return <p className="text-gray-500">{t('editor.loadFirst')}</p>;
 
   const currentPage = pages.find((p) => p.pageNum === currentPageNum);
-
-  const goToDisplayIdx = (idx: number) => {
-    if (total === 0) return;
-    const clamped = Math.max(0, Math.min(total - 1, idx));
-    setCurrentPageNum(pageOrder[clamped]);
-  };
-
-  const commitPageInput = () => {
-    const parsed = parseInt(pageInput, 10);
-    if (Number.isFinite(parsed) && total > 0) {
-      const clamped = Math.min(total, Math.max(1, parsed));
-      goToDisplayIdx(clamped - 1);
-      setPageInput(String(clamped));
-    } else {
-      setPageInput(String(displayPos || 1));
-    }
-  };
 
   const runOcr = async () => {
     if (running) return;
@@ -113,27 +83,6 @@ export function EditorView() {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2 flex-wrap">
-        <Button variant="outline" disabled={currentIdx <= 0} onClick={() => goToDisplayIdx(currentIdx - 1)}>{prevArrow}</Button>
-        <div dir="ltr" className="flex items-center gap-2">
-          <Input
-            type="number"
-            min={1}
-            max={total}
-            value={pageInput}
-            onChange={(e) => setPageInput(e.target.value)}
-            onBlur={commitPageInput}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                (e.currentTarget as HTMLInputElement).blur();
-              }
-            }}
-            className="w-20 text-center"
-            aria-label={t('editor.page', { n: displayPos, total })}
-          />
-          <span className="text-sm text-gray-600">/ {total}</span>
-        </div>
-        <Button variant="outline" disabled={currentIdx < 0 || currentIdx >= total - 1} onClick={() => goToDisplayIdx(currentIdx + 1)}>{nextArrow}</Button>
         <Button onClick={runOcr} disabled={running}>
           {running ? t('editor.ocrRunning') : t('editor.ocrPage')}
         </Button>
@@ -151,7 +100,7 @@ export function EditorView() {
           aria-label={t('settings.ocrPrompt')}
         />
       )}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
         <PageImage />
         <InlineDiffEditor />
         <FixPanel />

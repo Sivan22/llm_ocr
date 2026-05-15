@@ -29,10 +29,10 @@ function AppShell() {
   const [tab, setTab] = useState('ocr');
   const [thumbMode, setThumbMode] = useState<ThumbMode>(() => readSavedThumbMode());
   return (
-    <div dir={dir} className="max-w-7xl mx-auto p-6 flex flex-col gap-4 min-h-screen">
-      <header className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">{t('app.title')}</h1>
-        <div className="flex items-center gap-2">
+    <div dir={dir} className="max-w-7xl mx-auto p-3 sm:p-4 md:p-6 flex flex-col gap-4 min-h-screen">
+      <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <h1 className="text-xl sm:text-2xl font-bold">{t('app.title')}</h1>
+        <div className="flex flex-wrap items-center justify-end gap-2 min-w-0">
           <CostSummary />
           <LanguageToggle />
           <MugahPromo />
@@ -68,7 +68,7 @@ function AppShell() {
         <TabsContent value="jobs"><JobsList onOpened={() => setTab('ocr')} /></TabsContent>
       </Tabs>
 
-      <footer className="mt-10 flex flex-col items-center justify-center gap-2 border-t pt-6 text-sm text-gray-500">
+      <footer className="mt-6 sm:mt-10 flex flex-col items-center justify-center gap-2 border-t pt-6 text-sm text-gray-500">
         <a
           href="https://github.com/Sivan22/llm_ocr"
           target="_blank"

@@ -54,42 +54,46 @@ export function JobsList({ onOpened }: Props) {
     <div className="space-y-2">
       <p className="text-xs text-gray-500">{t('jobs.privacyNote')}</p>
       {err && <p className="text-sm text-red-600">{err}</p>}
-      <table className="text-sm w-full">
-        <thead className="text-left text-xs text-gray-600">
-          <tr>
-            <th>{t('jobs.file')}</th>
-            <th>{t('jobs.pages')}</th>
-            <th>{t('jobs.lastOpened')}</th>
-            <th>{t('jobs.actions')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.fileHash} className="border-t align-middle">
-              <td className="truncate max-w-[260px]">{r.fileName}</td>
-              <td>{r.pageCount}</td>
-              <td>{new Date(r.lastOpenedAt).toLocaleString()}</td>
-              <td className="flex gap-1 py-1">
-                <Button
-                  className="text-xs h-7"
-                  disabled={busy === r.fileHash}
-                  onClick={() => onReload(r.fileHash)}
-                >
-                  {t('jobs.reload')}
-                </Button>
-                <Button
-                  variant="outline"
-                  className="text-xs h-7"
-                  disabled={busy === r.fileHash}
-                  onClick={() => onDelete(r)}
-                >
-                  {t('jobs.delete')}
-                </Button>
-              </td>
+      <div className="-mx-3 sm:mx-0 overflow-x-auto">
+        <table className="text-sm w-full min-w-[480px]">
+          <thead className="text-left text-xs text-gray-600">
+            <tr>
+              <th className="px-3 sm:px-2 py-1">{t('jobs.file')}</th>
+              <th className="px-2 py-1">{t('jobs.pages')}</th>
+              <th className="px-2 py-1">{t('jobs.lastOpened')}</th>
+              <th className="px-3 sm:px-2 py-1">{t('jobs.actions')}</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.fileHash} className="border-t align-middle">
+                <td className="truncate max-w-[180px] sm:max-w-[260px] px-3 sm:px-2 py-1">{r.fileName}</td>
+                <td className="px-2 py-1">{r.pageCount}</td>
+                <td className="px-2 py-1 whitespace-nowrap">{new Date(r.lastOpenedAt).toLocaleString()}</td>
+                <td className="px-3 sm:px-2 py-1">
+                  <div className="flex gap-1">
+                    <Button
+                      className="text-xs h-7"
+                      disabled={busy === r.fileHash}
+                      onClick={() => onReload(r.fileHash)}
+                    >
+                      {t('jobs.reload')}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="text-xs h-7"
+                      disabled={busy === r.fileHash}
+                      onClick={() => onDelete(r)}
+                    >
+                      {t('jobs.delete')}
+                    </Button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

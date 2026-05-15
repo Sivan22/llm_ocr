@@ -60,8 +60,17 @@ export function FixPanel() {
       const img = await renderPageToPng(loadedDoc, currentPageNum);
       savePageImage(fileHash, currentPageNum, img);
       const filled = substitute(prompt, { text: page.text });
-      const result = await correctPage(model, img.dataUrl, filled, lang);
+      const { corrections: result, tokensIn, tokensOut } = await correctPage(model, img.dataUrl, filled, lang);
       setCorrections(result);
+      if ((tokensIn ?? 0) > 0 || (tokensOut ?? 0) > 0) {
+        const updated = {
+          ...page,
+          tokensIn: (page.tokensIn ?? 0) + (tokensIn ?? 0),
+          tokensOut: (page.tokensOut ?? 0) + (tokensOut ?? 0),
+        };
+        setPage(updated);
+        savePageResult(fileHash, updated);
+      }
       setStatus(result.length === 0 ? t('fix.noCorrections') : t('fix.foundN', { n: result.length }));
     } catch (e) {
       setStatus(t('fix.error', { msg: e instanceof Error ? e.message : String(e) }));

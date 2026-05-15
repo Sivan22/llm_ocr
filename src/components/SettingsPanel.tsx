@@ -36,8 +36,8 @@ export function SettingsPanel() {
   const models = modelsForRoute(settings.route);
 
   return (
-    <div className="space-y-6 max-w-3xl">
-      <div className="grid grid-cols-2 gap-4">
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label>{t('settings.provider')}</Label>
           <Select
