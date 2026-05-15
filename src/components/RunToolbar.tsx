@@ -110,14 +110,12 @@ export function RunToolbar({ mode, onModeChange }: Props) {
           <Clock className="h-4 w-4 me-1" />
           {t('batch.selectPending', { n: pendingPages.length })}
         </Button>
-        <Button
-          variant="outline"
-          onClick={() => selectPages(failedPages)}
-          disabled={failedPages.length === 0}
-        >
-          <AlertTriangle className="h-4 w-4 me-1" />
-          {t('batch.selectFailed', { n: failedPages.length })}
-        </Button>
+        {failedPages.length > 1 && (
+          <Button variant="outline" onClick={() => selectPages(failedPages)}>
+            <AlertTriangle className="h-4 w-4 me-1" />
+            {t('batch.selectFailed', { n: failedPages.length })}
+          </Button>
+        )}
 
         {running ? (
           <Button className="ms-2" variant="destructive" onClick={stop}>
@@ -141,7 +139,10 @@ export function RunToolbar({ mode, onModeChange }: Props) {
         ) : (
           <Button
             className="ms-2"
-            onClick={runSelected}
+            onClick={() => {
+              runSelected();
+              clearSelection();
+            }}
             disabled={selectedPages.size === 0}
           >
             <Play className="h-4 w-4 me-1 fill-current rtl:-scale-x-100" />

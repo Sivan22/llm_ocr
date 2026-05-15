@@ -274,9 +274,9 @@ export function PageImage() {
             }
           }}
           aria-label={t('editor.page', { n: displayPos, total })}
-          className="w-10 rounded border bg-white px-1 py-0.5 text-center"
+          className="w-14 rounded border bg-white px-1 py-0.5 text-center tabular-nums"
         />
-        <span className="text-gray-500">/ {total}</span>
+        <span className="whitespace-nowrap text-gray-500 tabular-nums">/ {total}</span>
         <Tooltip>
           <TooltipTrigger asChild>
             <button
