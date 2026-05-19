@@ -16,7 +16,7 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v
 
 export function PageImage() {
   const { loadedDoc, currentPageNum, setCurrentPageNum, pageOrder } = useProject();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [src, setSrc] = useState<string>('');
   const [err, setErr] = useState<string | null>(null);
   const [zoomPct, setZoomPct] = useState(100);
@@ -251,15 +251,15 @@ export function PageImage() {
           <TooltipTrigger asChild>
             <button
               type="button"
-              disabled={currentIdx <= 0}
-              onClick={() => goToDisplayIdx(currentIdx - 1)}
-              aria-label={t('image.prevPage')}
+              disabled={lang === 'he' ? currentIdx < 0 || currentIdx >= total - 1 : currentIdx <= 0}
+              onClick={() => goToDisplayIdx(currentIdx + (lang === 'he' ? 1 : -1))}
+              aria-label={t(lang === 'he' ? 'image.nextPage' : 'image.prevPage')}
               className="rounded p-1 hover:bg-gray-100 disabled:opacity-40"
             >
               <ChevronLeft className="size-4" />
             </button>
           </TooltipTrigger>
-          <TooltipContent>{t('image.prevPage')}</TooltipContent>
+          <TooltipContent>{t(lang === 'he' ? 'image.nextPage' : 'image.prevPage')}</TooltipContent>
         </Tooltip>
         <input
           type="text"
@@ -281,15 +281,15 @@ export function PageImage() {
           <TooltipTrigger asChild>
             <button
               type="button"
-              disabled={currentIdx < 0 || currentIdx >= total - 1}
-              onClick={() => goToDisplayIdx(currentIdx + 1)}
-              aria-label={t('image.nextPage')}
+              disabled={lang === 'he' ? currentIdx <= 0 : currentIdx < 0 || currentIdx >= total - 1}
+              onClick={() => goToDisplayIdx(currentIdx + (lang === 'he' ? -1 : 1))}
+              aria-label={t(lang === 'he' ? 'image.prevPage' : 'image.nextPage')}
               className="rounded p-1 hover:bg-gray-100 disabled:opacity-40"
             >
               <ChevronRight className="size-4" />
             </button>
           </TooltipTrigger>
-          <TooltipContent>{t('image.nextPage')}</TooltipContent>
+          <TooltipContent>{t(lang === 'he' ? 'image.prevPage' : 'image.nextPage')}</TooltipContent>
         </Tooltip>
         <span className="mx-1 h-4 w-px bg-gray-300" />
         <Tooltip>
