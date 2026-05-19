@@ -4,7 +4,6 @@ import { useProject } from '../store/ProjectContext';
 import { useI18n } from '../i18n/I18nContext';
 import { openPdf, imagesAsDoc, combine, readFileBytes, type LoadedDoc } from '../pdf/render';
 import { sha256 } from '../pdf/hash';
-import { loadAllPageResults } from '../store/persistence';
 import { upsertJob, pruneJobs } from '../store/jobs';
 import { savePageImage } from '../store/pageImagesStore';
 import { concatBytes } from '../lib/bytes';
@@ -52,9 +51,12 @@ export function DropStrip() {
       if (!doc) throw new Error(t('file.errorMixed'));
 
       const concat = concatBytes(combinedBytes);
-      const newHash = await sha256(concat);
-      const restored = await loadAllPageResults(newHash);
-      setProject({ doc, fileHash: newHash, fileName: displayName, restored, bytes: concat });
+      const contentHash = await sha256(concat);
+      // Tag each upload as a fresh job so re-uploading the same file does not
+      // resurrect a prior session's OCR data. Prior runs remain reachable via
+      // the Jobs list "Reload" button, which restores by the tagged hash.
+      const newHash = `${contentHash}-${Date.now().toString(36)}`;
+      setProject({ doc, fileHash: newHash, fileName: displayName, restored: [], bytes: concat });
 
       try {
         await upsertJob({ fileHash: newHash, fileName: displayName, pageCount: doc.pageCount });

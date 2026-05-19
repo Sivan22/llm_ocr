@@ -236,7 +236,12 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
 
     const oldHash = fileHash;
     const merged = concatBytes([bytes, ...addedBytes]);
-    const newHash = await sha256(merged);
+    const contentHash = await sha256(merged);
+    // Preserve the session tag (if any) from oldHash so an append stays within
+    // the same job rather than spawning a sibling. sha256 hex never contains '-'.
+    const dashIdx = oldHash.indexOf('-');
+    const sessionSuffix = dashIdx >= 0 ? oldHash.slice(dashIdx) : `-${Date.now().toString(36)}`;
+    const newHash = `${contentHash}${sessionSuffix}`;
     const mergedDoc = combine(loadedDoc, addedDoc);
     const mergedName = `${fileName} + ${files.map((f) => f.name).join(' + ')}`;
 
