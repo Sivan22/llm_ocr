@@ -1,6 +1,6 @@
 // src/components/RunToolbar.tsx
 import { useEffect, useMemo, useState } from 'react';
-import { LayoutGrid, Grid3x3, List, Play, Square, X, Clock, AlertTriangle, Check } from 'lucide-react';
+import { LayoutGrid, Grid3x3, List, Play, Square, X, Clock, AlertTriangle, Check, ListChecks } from 'lucide-react';
 import { useProject } from '../store/ProjectContext';
 import { useSettings } from '../store/SettingsContext';
 import { useI18n } from '../i18n/I18nContext';
@@ -28,7 +28,7 @@ const VIEW_ICONS: Record<ThumbMode, typeof LayoutGrid> = {
 export function RunToolbar({ mode, onModeChange }: Props) {
   const { t } = useI18n();
   const { settings } = useSettings();
-  const { loadedDoc, pageOrder, selectedPages, clearSelection, setSelectedPages, setSelectionAnchor } = useProject();
+  const { loadedDoc, pageOrder, selectedPages, clearSelection, setSelectedPages, setSelectionAnchor, selectAllPages } = useProject();
   const { running, runSelected, stop, pendingPages, failedPages } = useBatchRunner();
   const [rangeInput, setRangeInput] = useState('');
 
@@ -102,6 +102,17 @@ export function RunToolbar({ mode, onModeChange }: Props) {
           </Tooltip>
         </div>
 
+        <Button
+          variant="outline"
+          onClick={() => {
+            selectAllPages();
+            if (pageOrder[0] !== undefined) setSelectionAnchor(pageOrder[0]);
+          }}
+          disabled={pageOrder.length === 0}
+        >
+          <ListChecks className="h-4 w-4 me-1" />
+          {t('batch.selectAll', { n: pageOrder.length })}
+        </Button>
         <Button
           variant="outline"
           onClick={() => selectPages(pendingPages)}

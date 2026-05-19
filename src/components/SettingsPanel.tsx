@@ -95,7 +95,7 @@ export function SettingsPanel() {
       <div>
         <Label>{t('settings.batchSize', { n: settings.batchSize })}</Label>
         <Slider
-          min={1} max={50} step={1}
+          min={1} max={200} step={1}
           value={settings.batchSize}
           onChange={(e) => update({ batchSize: Number(e.target.value) })}
         />
