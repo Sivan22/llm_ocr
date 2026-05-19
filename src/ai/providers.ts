@@ -10,7 +10,9 @@ const DIRECT_MODEL_ID: Record<Route, Partial<Record<Model, string>>> = {
     'claude-sonnet-4-6': 'claude-sonnet-4-6',
   },
   google: {
-    'gemini-3.1-pro': 'gemini-3.1-pro-preview',
+    'gemini-3.1-pro':        'gemini-3.1-pro-preview',
+    'gemini-3.1-flash-lite': 'gemini-3.1-flash-lite-preview',
+    'gemini-2.5-flash':      'gemini-2.5-flash',
   },
   openai: {
     'gpt-4o':      'gpt-4o',

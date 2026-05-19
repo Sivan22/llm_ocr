@@ -4,6 +4,8 @@ export type Model =
   | 'claude-opus-4-7'
   | 'claude-sonnet-4-6'
   | 'gemini-3.1-pro'
+  | 'gemini-3.1-flash-lite'
+  | 'gemini-2.5-flash'
   | 'gpt-4o'
   | 'gpt-4o-mini';
 

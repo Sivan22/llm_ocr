@@ -8,7 +8,9 @@ export interface Rate {
 const RATES: Record<Model, Rate> = {
   'claude-opus-4-7':   { inputPerMillion: 15.0, outputPerMillion: 75.0 },
   'claude-sonnet-4-6': { inputPerMillion: 3.0,  outputPerMillion: 15.0 },
-  'gemini-3.1-pro':    { inputPerMillion: 1.25, outputPerMillion: 10.0 },
+  'gemini-3.1-pro':        { inputPerMillion: 1.25, outputPerMillion: 10.0 },
+  'gemini-3.1-flash-lite': { inputPerMillion: 0.25, outputPerMillion: 1.5 },
+  'gemini-2.5-flash':      { inputPerMillion: 0.3,  outputPerMillion: 2.5 },
   'gpt-4o':            { inputPerMillion: 2.5,  outputPerMillion: 10.0 },
   'gpt-4o-mini':       { inputPerMillion: 0.15, outputPerMillion: 0.6 },
 };
