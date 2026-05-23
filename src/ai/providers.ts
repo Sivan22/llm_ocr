@@ -12,6 +12,7 @@ const DIRECT_MODEL_ID: Record<Route, Partial<Record<Model, string>>> = {
   google: {
     'gemini-3.1-pro':        'gemini-3.1-pro-preview',
     'gemini-3.1-flash-lite': 'gemini-3.1-flash-lite-preview',
+    'gemini-3.5-flash':      'gemini-3.5-flash',
     'gemini-2.5-flash':      'gemini-2.5-flash',
   },
   openai: {
@@ -22,6 +23,7 @@ const DIRECT_MODEL_ID: Record<Route, Partial<Record<Model, string>>> = {
     'claude-opus-4-7':   'anthropic/claude-opus-4-7',
     'claude-sonnet-4-6': 'anthropic/claude-sonnet-4-6',
     'gemini-3.1-pro':    'google/gemini-3.1-pro-preview',
+    'gemini-3.5-flash':  'google/gemini-3.5-flash',
     'gpt-4o':            'openai/gpt-4o',
     'gpt-4o-mini':       'openai/gpt-4o-mini',
   },
