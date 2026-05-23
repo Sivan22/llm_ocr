@@ -83,11 +83,15 @@ export function ExportPanel() {
   return (
     <div className="space-y-3">
       <div className="flex gap-2">
-        <Button onClick={onDownloadDocx} disabled={!md || busy}>
-          {busy ? t('export.building') : t('export.download')}
-        </Button>
-        <Button variant="outline" onClick={onDownloadMd} disabled={!md || busy}>
-          {t('export.download_md')}
+        <Button
+          onClick={activeTab === 'word' ? onDownloadDocx : onDownloadMd}
+          disabled={!md || busy}
+        >
+          {busy
+            ? t('export.building')
+            : activeTab === 'word'
+              ? t('export.download')
+              : t('export.download_md')}
         </Button>
       </div>
 
