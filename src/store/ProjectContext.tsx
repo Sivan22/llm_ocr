@@ -73,19 +73,26 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     setSelectionTick((x) => x + 1);
   };
 
-  const hydratingForKey = useRef<string>('');
+  // Which page the `corrections` state currently belongs to. During a page
+  // switch the state still holds the previous page's corrections until the
+  // async load below resolves, so we must not persist them to the new key.
+  const loadedKey = useRef<string>('');
+  // Set right after hydrating a page so the resulting state change doesn't
+  // immediately re-persist data we just read from storage.
+  const skipSaveKey = useRef<string>('');
 
   useEffect(() => {
     if (!fileHash) {
+      loadedKey.current = '';
       setCorrections([]);
       return;
     }
     const key = `${fileHash}:${currentPageNum}`;
-    hydratingForKey.current = key;
     let cancelled = false;
     loadCorrections(fileHash, currentPageNum).then((arr) => {
       if (cancelled) return;
-      if (hydratingForKey.current !== key) return;
+      loadedKey.current = key;
+      skipSaveKey.current = key;
       setCorrections(arr);
     });
     return () => { cancelled = true; };
@@ -94,8 +101,11 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!fileHash) return;
     const key = `${fileHash}:${currentPageNum}`;
-    if (hydratingForKey.current === key) {
-      hydratingForKey.current = '';
+    // Corrections in state still belong to another page (mid-navigation) — skip.
+    if (loadedKey.current !== key) return;
+    // Don't re-persist what we just hydrated from storage.
+    if (skipSaveKey.current === key) {
+      skipSaveKey.current = '';
       return;
     }
     saveCorrections(fileHash, currentPageNum, corrections);

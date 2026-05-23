@@ -82,24 +82,23 @@ export function ExportPanel() {
 
   return (
     <div className="space-y-3">
-      <div className="flex gap-2">
-        <Button
-          onClick={activeTab === 'word' ? onDownloadDocx : onDownloadMd}
-          disabled={!md || busy}
-        >
-          {busy
-            ? t('export.building')
-            : activeTab === 'word'
-              ? t('export.download')
-              : t('export.download_md')}
-        </Button>
-      </div>
-
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'word' | 'markdown')}>
-        <TabsList>
-          <TabsTrigger value="word">{t('export.preview_word')}</TabsTrigger>
-          <TabsTrigger value="markdown">{t('export.preview_markdown')}</TabsTrigger>
-        </TabsList>
+        <div className="flex items-center gap-2">
+          <TabsList>
+            <TabsTrigger value="word">{t('export.preview_word')}</TabsTrigger>
+            <TabsTrigger value="markdown">{t('export.preview_markdown')}</TabsTrigger>
+          </TabsList>
+          <Button
+            onClick={activeTab === 'word' ? onDownloadDocx : onDownloadMd}
+            disabled={!md || busy}
+          >
+            {busy
+              ? t('export.building')
+              : activeTab === 'word'
+                ? t('export.download')
+                : t('export.download_md')}
+          </Button>
+        </div>
 
         <TabsContent value="word">
           {!md ? (
