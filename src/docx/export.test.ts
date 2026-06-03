@@ -42,6 +42,17 @@ describe('mdToDocxBlob footnotes', () => {
     expect(footnotes).toContain('the note');
   });
 
+  it('marks paragraphs and runs as RTL for Hebrew content', async () => {
+    const md = 'שלום עולם [*]\n\n---\nהערות\n---\n[*] הערה';
+    const blob = await mdToDocxBlob(md);
+    const doc = await readDocxFile(blob, 'word/document.xml');
+    // paragraph-level bidi and run-level rtl must both be present
+    expect(doc).toContain('<w:bidi');
+    expect(doc).toContain('<w:rtl');
+    const footnotes = await readDocxFile(blob, 'word/footnotes.xml');
+    expect(footnotes).toContain('<w:rtl');
+  });
+
   it('keeps literal [*] when no matching footnote exists', async () => {
     const md = 'body with [*] dangling marker';
     const blob = await mdToDocxBlob(md);

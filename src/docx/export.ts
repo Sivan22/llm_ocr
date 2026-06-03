@@ -66,7 +66,7 @@ export async function mdToDocxBlob(md: string): Promise<Blob> {
         new Paragraph({
           alignment: AlignmentType.START,
           bidirectional: true,
-          children: [new TextRun({ text: decodeEntities(note) })],
+          children: [new TextRun({ text: decodeEntities(note), rightToLeft: true })],
         }),
       ],
     };
@@ -95,7 +95,7 @@ function inlineRuns(tokens: Token[], ctx: RenderContext): ParagraphChild[] {
   for (const t of tokens) {
     runs.push(...runsForToken(t, false, false, ctx));
   }
-  if (runs.length === 0) runs.push(new TextRun({ text: '' }));
+  if (runs.length === 0) runs.push(new TextRun({ text: '', rightToLeft: true }));
   return runs;
 }
 
@@ -146,7 +146,7 @@ function textWithFootnotes(text: string, bold: boolean, italic: boolean, ctx: Re
 }
 
 function makeTextRun(text: string, bold: boolean, italic: boolean): TextRun {
-  return new TextRun({ text, bold: bold || undefined, italics: italic || undefined });
+  return new TextRun({ text, bold: bold || undefined, italics: italic || undefined, rightToLeft: true });
 }
 
 function decodeEntities(s: string): string {
