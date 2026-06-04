@@ -22,6 +22,19 @@ export function inkBounds(img: RGBAImage, threshold: number): BBox {
   return { x0, y0, x1: x1 + 1, y1: y1 + 1 };
 }
 
+function anyInk(img: RGBAImage, threshold: number): boolean {
+  for (let y = 0; y < img.height; y++) {
+    for (let x = 0; x < img.width; x++) {
+      if (isInk(img, x, y, threshold)) return true;
+    }
+  }
+  return false;
+}
+
+function clamp(v: number, lo: number, hi: number): number {
+  return Math.max(lo, Math.min(hi, v));
+}
+
 // Count ink pixels in column x over the vertical span [yTop, yBottom).
 function columnInk(img: RGBAImage, x: number, yTop: number, yBottom: number, threshold: number): number {
   let n = 0;
@@ -114,10 +127,14 @@ export function detectRegions(img: RGBAImage, opts: DetectOptions): DetectResult
   const inkBox = inkBounds(img, threshold);
   const flags: string[] = [];
 
+  if (!anyInk(img, threshold)) {
+    return { regions: [], flags: ['no-ink'], gutterX: Math.floor(img.width / 2), footY: null, inkBox };
+  }
+
   // Gutter
   let gutterX: number;
   if (opts.gutterFrac !== undefined) {
-    gutterX = Math.round(opts.gutterFrac * img.width);
+    gutterX = clamp(Math.round(opts.gutterFrac * img.width), inkBox.x0, inkBox.x1);
     flags.push('gutter-forced');
   } else {
     const g = detectColumnGutter(img, threshold, inkBox);
@@ -130,7 +147,7 @@ export function detectRegions(img: RGBAImage, opts: DetectOptions): DetectResult
   if (opts.noFootnotes) {
     footY = null;
   } else if (opts.footnoteFrac !== undefined) {
-    footY = Math.round(opts.footnoteFrac * img.height);
+    footY = clamp(Math.round(opts.footnoteFrac * img.height), inkBox.y0, inkBox.y1);
     flags.push('footnote-forced');
   } else {
     footY = detectFootnoteSplit(img, threshold, inkBox);

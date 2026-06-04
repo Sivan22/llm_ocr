@@ -129,4 +129,23 @@ describe('detectRegions', () => {
     expect(r.footY).toBeNull();
     expect(r.regions.some((x) => x.role === 'footnotes')).toBe(false);
   });
+
+  it('flags no-ink and returns no regions on a blank page', () => {
+    const img = blank(100, 100);
+    const r = detectRegions(img, {});
+    expect(r.regions).toEqual([]);
+    expect(r.flags).toContain('no-ink');
+    expect(r.footY).toBeNull();
+  });
+
+  it('clamps a forced footnote fraction above the ink box (no inverted bbox)', () => {
+    const img = blank(100, 100);
+    fillRect(img, { x0: 20, y0: 40, x1: 80, y1: 90 }); // ink starts at y=40
+    const r = detectRegions(img, { footnoteFrac: 0.1 }); // 0.1*100 = 10, above inkBox.y0=40
+    expect(r.footY).toBe(40);                 // clamped up to inkBox.y0
+    for (const reg of r.regions) {
+      expect(reg.bbox.x1).toBeGreaterThanOrEqual(reg.bbox.x0);
+      expect(reg.bbox.y1).toBeGreaterThanOrEqual(reg.bbox.y0); // no inverted bbox
+    }
+  });
 });
