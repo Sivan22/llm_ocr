@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { RGBAImage, BBox } from './types';
-import { inkBounds, detectColumnGutter } from './segment';
+import { inkBounds, detectColumnGutter, detectFootnoteSplit } from './segment';
 
 // --- test image helpers (shared across segment tests) ---
 export function blank(width: number, height: number): RGBAImage {
@@ -46,5 +46,41 @@ describe('inkBounds', () => {
   it('returns the full image when there is no ink', () => {
     const img = blank(50, 30);
     expect(inkBounds(img, 128)).toEqual({ x0: 0, y0: 0, x1: 50, y1: 30 });
+  });
+});
+
+// Sparse "text": dashes (2px ink / 3px gap) across the x-span, a line every 3 rows.
+function textRow(img: import('./types').RGBAImage, xL: number, xR: number, y: number): void {
+  for (let x = xL; x < xR; x += 5) fillRect(img, { x0: x, y0: y, x1: Math.min(x + 2, xR), y1: y + 1 });
+}
+function textBlock(img: import('./types').RGBAImage, xL: number, yT: number, xR: number, yB: number): void {
+  for (let y = yT; y < yB; y += 3) textRow(img, xL, xR, y);
+}
+
+describe('detectFootnoteSplit', () => {
+  it('splits at a wide whitespace gap above the footnotes', () => {
+    const img = blank(100, 100);
+    textBlock(img, 10, 10, 80, 55); // body text
+    textBlock(img, 10, 70, 80, 90); // footnote text after a wide gap
+    const ink = inkBounds(img, 128);
+    const y = detectFootnoteSplit(img, 128, ink);
+    expect(y).not.toBeNull();
+    expect(y!).toBeGreaterThan(55);
+    expect(y!).toBeLessThan(70);
+  });
+  it('splits at a horizontal rule', () => {
+    const img = blank(100, 100);
+    textBlock(img, 10, 10, 80, 58);                          // body text
+    fillRect(img, { x0: 12, y0: 60, x1: 88, y1: 61 });       // solid near-full-width rule
+    textBlock(img, 10, 65, 80, 90);                          // footnote text
+    const ink = inkBounds(img, 128);
+    const y = detectFootnoteSplit(img, 128, ink);
+    expect(y).toBe(60);
+  });
+  it('returns null when there is no gap or rule', () => {
+    const img = blank(100, 100);
+    textBlock(img, 10, 10, 80, 90); // uniform sparse text, no wide gap
+    const ink = inkBounds(img, 128);
+    expect(detectFootnoteSplit(img, 128, ink)).toBeNull();
   });
 });

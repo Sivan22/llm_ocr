@@ -63,3 +63,48 @@ export function detectColumnGutter(
   }
   return { x: Math.floor(ink.x0 + w / 2), fallback: true };
 }
+
+// Count ink pixels in row y over the horizontal span [xLeft, xRight).
+function rowInk(img: RGBAImage, y: number, xLeft: number, xRight: number, threshold: number): number {
+  let n = 0;
+  for (let x = xLeft; x < xRight; x++) if (isInk(img, x, y, threshold)) n++;
+  return n;
+}
+
+// Returns the y of the footnote separator (rule line preferred, else widest
+// whitespace valley) in the lower band, or null if none is convincing.
+export function detectFootnoteSplit(img: RGBAImage, threshold: number, ink: BBox): number | null {
+  const w = ink.x1 - ink.x0;
+  const h = ink.y1 - ink.y0;
+  const bandStart = Math.floor(ink.y0 + 0.50 * h);
+  const bandEnd = Math.floor(ink.y0 + 0.92 * h);
+  const ruleCutoff = 0.85 * w;            // near-full-width solid row (real text rows are far sparser)
+  const valleyCutoff = Math.max(1, 0.05 * w);
+  const minValley = Math.max(3, Math.floor(0.04 * h));
+
+  // 1) Prefer the topmost horizontal rule in the band.
+  for (let y = bandStart; y < bandEnd; y++) {
+    if (rowInk(img, y, ink.x0, ink.x1, threshold) >= ruleCutoff) return y;
+  }
+
+  // 2) Else the widest whitespace valley wider than minValley.
+  let bestStart = -1, bestLen = 0;
+  let runStart = -1;
+  for (let y = bandStart; y < bandEnd; y++) {
+    const empty = rowInk(img, y, ink.x0, ink.x1, threshold) <= valleyCutoff;
+    if (empty) {
+      if (runStart < 0) runStart = y;
+    } else if (runStart >= 0) {
+      const len = y - runStart;
+      if (len > bestLen) { bestLen = len; bestStart = runStart; }
+      runStart = -1;
+    }
+  }
+  if (runStart >= 0) {
+    const len = bandEnd - runStart;
+    if (len > bestLen) { bestLen = len; bestStart = runStart; }
+  }
+
+  if (bestLen >= minValley) return Math.floor(bestStart + bestLen / 2);
+  return null;
+}
