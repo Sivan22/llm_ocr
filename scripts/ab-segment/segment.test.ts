@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { RGBAImage, BBox } from './types';
-import { inkBounds } from './segment';
+import { inkBounds, detectColumnGutter } from './segment';
 
 // --- test image helpers (shared across segment tests) ---
 export function blank(width: number, height: number): RGBAImage {
@@ -15,6 +15,27 @@ export function fillRect(img: RGBAImage, b: BBox, gray = 0): void {
     }
   }
 }
+
+describe('detectColumnGutter', () => {
+  it('finds the whitespace valley between two columns', () => {
+    const img = blank(100, 100);
+    fillRect(img, { x0: 10, y0: 10, x1: 40, y1: 90 }); // left block
+    fillRect(img, { x0: 60, y0: 10, x1: 90, y1: 90 }); // right block
+    const ink = { x0: 10, y0: 10, x1: 90, y1: 90 };
+    const r = detectColumnGutter(img, 128, ink);
+    expect(r.fallback).toBe(false);
+    expect(r.x).toBeGreaterThanOrEqual(45);
+    expect(r.x).toBeLessThanOrEqual(55);
+  });
+  it('falls back to the geometric center when there is no valley', () => {
+    const img = blank(100, 100);
+    fillRect(img, { x0: 10, y0: 10, x1: 90, y1: 90 }); // one solid block
+    const ink = { x0: 10, y0: 10, x1: 90, y1: 90 };
+    const r = detectColumnGutter(img, 128, ink);
+    expect(r.fallback).toBe(true);
+    expect(r.x).toBe(50);
+  });
+});
 
 describe('inkBounds', () => {
   it('finds the tight bounding box of dark pixels', () => {
