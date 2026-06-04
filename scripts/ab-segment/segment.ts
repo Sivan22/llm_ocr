@@ -1,4 +1,4 @@
-import type { RGBAImage, BBox } from './types';
+import type { RGBAImage, BBox, DetectOptions, DetectResult, Region } from './types';
 
 function isInk(img: RGBAImage, x: number, y: number, threshold: number): boolean {
   const i = (y * img.width + x) * 4;
@@ -107,4 +107,44 @@ export function detectFootnoteSplit(img: RGBAImage, threshold: number, ink: BBox
 
   if (bestLen >= minValley) return Math.floor(bestStart + bestLen / 2);
   return null;
+}
+
+export function detectRegions(img: RGBAImage, opts: DetectOptions): DetectResult {
+  const threshold = opts.threshold ?? 128;
+  const inkBox = inkBounds(img, threshold);
+  const flags: string[] = [];
+
+  // Gutter
+  let gutterX: number;
+  if (opts.gutterFrac !== undefined) {
+    gutterX = Math.round(opts.gutterFrac * img.width);
+    flags.push('gutter-forced');
+  } else {
+    const g = detectColumnGutter(img, threshold, inkBox);
+    gutterX = g.x;
+    if (g.fallback) flags.push('gutter-fallback');
+  }
+
+  // Footnote split
+  let footY: number | null;
+  if (opts.noFootnotes) {
+    footY = null;
+  } else if (opts.footnoteFrac !== undefined) {
+    footY = Math.round(opts.footnoteFrac * img.height);
+    flags.push('footnote-forced');
+  } else {
+    footY = detectFootnoteSplit(img, threshold, inkBox);
+    if (footY === null) flags.push('no-footnote');
+  }
+
+  const bodyBottom = footY ?? inkBox.y1;
+  const regions: Region[] = [
+    { role: 'right-body', bbox: { x0: gutterX, y0: inkBox.y0, x1: inkBox.x1, y1: bodyBottom } },
+    { role: 'left-body', bbox: { x0: inkBox.x0, y0: inkBox.y0, x1: gutterX, y1: bodyBottom } },
+  ];
+  if (footY !== null) {
+    regions.push({ role: 'footnotes', bbox: { x0: inkBox.x0, y0: footY, x1: inkBox.x1, y1: inkBox.y1 } });
+  }
+
+  return { regions, flags, gutterX, footY, inkBox };
 }

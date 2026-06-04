@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { RGBAImage, BBox } from './types';
-import { inkBounds, detectColumnGutter, detectFootnoteSplit } from './segment';
+import { inkBounds, detectColumnGutter, detectFootnoteSplit, detectRegions } from './segment';
 
 // --- test image helpers (shared across segment tests) ---
 export function blank(width: number, height: number): RGBAImage {
@@ -82,5 +82,51 @@ describe('detectFootnoteSplit', () => {
     textBlock(img, 10, 10, 80, 90); // uniform sparse text, no wide gap
     const ink = inkBounds(img, 128);
     expect(detectFootnoteSplit(img, 128, ink)).toBeNull();
+  });
+});
+
+describe('detectRegions', () => {
+  it('returns right-body, left-body, footnotes in RTL order with a footnote gap', () => {
+    const img = blank(100, 100);
+    textBlock(img, 10, 10, 40, 55); // left col body
+    textBlock(img, 60, 10, 90, 55); // right col body
+    textBlock(img, 10, 72, 90, 88); // footnotes (wide) after a gap
+    const r = detectRegions(img, {});
+    expect(r.regions.map((x) => x.role)).toEqual(['right-body', 'left-body', 'footnotes']);
+    const right = r.regions[0].bbox, left = r.regions[1].bbox, fn = r.regions[2].bbox;
+    expect(right.x0).toBe(r.gutterX);
+    expect(left.x1).toBe(r.gutterX);
+    expect(right.y1).toBe(r.footY!);   // body stops at footnote line
+    expect(fn.y0).toBe(r.footY!);
+    expect(r.footY).not.toBeNull();
+  });
+
+  it('omits footnotes and flags no-footnote on a body-only page', () => {
+    const img = blank(100, 100);
+    textBlock(img, 10, 10, 40, 90); // left col, full height, no gap
+    textBlock(img, 60, 10, 90, 90); // right col, full height, no gap
+    const r = detectRegions(img, {});
+    expect(r.regions.map((x) => x.role)).toEqual(['right-body', 'left-body']);
+    expect(r.footY).toBeNull();
+    expect(r.flags).toContain('no-footnote');
+  });
+
+  it('honors forced gutter/footnote fractions and flags them', () => {
+    const img = blank(100, 100);
+    fillRect(img, { x0: 5, y0: 5, x1: 95, y1: 95 });
+    const r = detectRegions(img, { gutterFrac: 0.5, footnoteFrac: 0.8 });
+    expect(r.gutterX).toBe(50);
+    expect(r.footY).toBe(80);
+    expect(r.flags).toContain('gutter-forced');
+    expect(r.flags).toContain('footnote-forced');
+  });
+
+  it('skips footnotes entirely when noFootnotes is set', () => {
+    const img = blank(100, 100);
+    textBlock(img, 10, 10, 40, 90);
+    textBlock(img, 60, 10, 90, 90);
+    const r = detectRegions(img, { noFootnotes: true });
+    expect(r.footY).toBeNull();
+    expect(r.regions.some((x) => x.role === 'footnotes')).toBe(false);
   });
 });
