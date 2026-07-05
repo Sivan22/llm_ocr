@@ -5,11 +5,11 @@ import { DEFAULT_SETTINGS } from '../store/settings';
 
 describe('providers', () => {
   it('resolves direct anthropic model id', () => {
-    expect(resolveModelId('anthropic', 'claude-opus-4-7')).toBe('claude-opus-4-7');
+    expect(resolveModelId('anthropic', 'claude-opus-4-8')).toBe('claude-opus-4-8');
   });
 
   it('resolves gateway model id with prefix', () => {
-    expect(resolveModelId('gateway', 'claude-opus-4-7')).toBe('anthropic/claude-opus-4-7');
+    expect(resolveModelId('gateway', 'claude-opus-4-8')).toBe('anthropic/claude-opus-4-8');
     expect(resolveModelId('gateway', 'gemini-3.1-pro')).toBe('google/gemini-3.1-pro-preview');
     expect(resolveModelId('gateway', 'gpt-4o')).toBe('openai/gpt-4o');
   });
@@ -20,7 +20,7 @@ describe('providers', () => {
   });
 
   it('createModel throws when key for active route is missing', () => {
-    const s: Settings = { ...DEFAULT_SETTINGS, route: 'anthropic', model: 'claude-opus-4-7' };
+    const s: Settings = { ...DEFAULT_SETTINGS, route: 'anthropic', model: 'claude-opus-4-8' };
     s.apiKeys = { anthropic: '', google: '', openai: '', gateway: '' };
     expect(() => createModel(s)).toThrow(/Anthropic API key/);
   });
