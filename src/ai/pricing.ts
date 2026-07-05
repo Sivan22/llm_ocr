@@ -6,6 +6,7 @@ export interface Rate {
 }
 
 const RATES: Record<Model, Rate> = {
+  'claude-fable-5':    { inputPerMillion: 10.0, outputPerMillion: 50.0 },
   'claude-opus-4-7':   { inputPerMillion: 15.0, outputPerMillion: 75.0 },
   'claude-sonnet-4-6': { inputPerMillion: 3.0,  outputPerMillion: 15.0 },
   'gemini-3.1-pro':        { inputPerMillion: 2.0,  outputPerMillion: 12.0 },

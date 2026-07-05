@@ -6,6 +6,7 @@ import type { Model, Route, Settings } from '../lib/types';
 
 const DIRECT_MODEL_ID: Record<Route, Partial<Record<Model, string>>> = {
   anthropic: {
+    'claude-fable-5':    'claude-fable-5',
     'claude-opus-4-7':   'claude-opus-4-7',
     'claude-sonnet-4-6': 'claude-sonnet-4-6',
   },
@@ -20,6 +21,7 @@ const DIRECT_MODEL_ID: Record<Route, Partial<Record<Model, string>>> = {
     'gpt-4o-mini': 'gpt-4o-mini',
   },
   gateway: {
+    'claude-fable-5':    'anthropic/claude-fable-5',
     'claude-opus-4-7':   'anthropic/claude-opus-4-7',
     'claude-sonnet-4-6': 'anthropic/claude-sonnet-4-6',
     'gemini-3.1-pro':    'google/gemini-3.1-pro-preview',

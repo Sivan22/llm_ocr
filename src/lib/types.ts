@@ -1,6 +1,7 @@
 export type Route = 'anthropic' | 'google' | 'openai' | 'gateway';
 
 export type Model =
+  | 'claude-fable-5'
   | 'claude-opus-4-7'
   | 'claude-sonnet-4-6'
   | 'gemini-3.1-pro'
