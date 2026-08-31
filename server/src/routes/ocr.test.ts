@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../ai/providers.js', () => ({
   createServerModel: vi.fn(async () => ({ __model: true })),
@@ -28,6 +28,12 @@ function post(payload: unknown) {
 }
 
 describe('POST /api/ocr', () => {
+  // Each test's mock-call assertions look at index 0 of the call history, so the
+  // history must not carry calls over from earlier tests in this file.
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('returns text, usage and the cost source', async () => {
     const res = await post(body);
     expect(res.status).toBe(200);
@@ -65,5 +71,19 @@ describe('POST /api/ocr', () => {
     const res = await post(body);
     expect(res.status).toBe(502);
     expect(((await res.json()) as { error: string }).error).toMatch(/upstream exploded/);
+  });
+
+  it('forwards the client abort signal to the AI call unchanged, so a stopped run cancels in flight work', async () => {
+    const controller = new AbortController();
+    const req = new Request('http://localhost/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    // Passing a single Request to Hono's .request() forwards it unwrapped, so
+    // req.signal is exactly what the route handler sees as c.req.raw.signal.
+    await ocrRoutes.request(req);
+    expect(vi.mocked(ocrPage).mock.calls[0][3]).toBe(req.signal);
   });
 });
