@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('../ai/claude-cli.js', () => ({
   claudeCliAvailable: vi.fn(async () => true),
@@ -23,16 +23,17 @@ describe('availableRoutes', () => {
 
 describe('GET /api/health', () => {
   beforeEach(() => vi.mocked(claudeCliAvailable).mockResolvedValue(true));
+  afterEach(() => vi.unstubAllEnvs());
 
   it('reports status, the probed CLI flag, and the key-backed routes', async () => {
-    process.env.AI_GATEWAY_API_KEY = 'sk-test';
+    vi.stubEnv('AI_GATEWAY_API_KEY', 'sk-test');
     const res = await healthRoutes.request('/');
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ status: 'ok', claudeCli: true, routes: ['gateway'] });
   });
 
   it('reports claudeCli false when the probe fails', async () => {
-    process.env.AI_GATEWAY_API_KEY = 'sk-test';
+    vi.stubEnv('AI_GATEWAY_API_KEY', 'sk-test');
     vi.mocked(claudeCliAvailable).mockResolvedValue(false);
     const res = await healthRoutes.request('/');
     expect(await res.json()).toMatchObject({ claudeCli: false });
