@@ -1,4 +1,6 @@
 import { execFile } from 'node:child_process';
+import type { LanguageModel } from 'ai';
+import type { ClaudeCodeSettings } from 'ai-sdk-provider-claude-code';
 
 let cached: boolean | undefined;
 let inflight: Promise<boolean> | undefined;
@@ -36,4 +38,29 @@ export function claudeCliAvailable(): Promise<boolean> {
 export function resetClaudeCliProbe(): void {
   cached = undefined;
   inflight = undefined;
+}
+
+type ClaudeCodeFactory = (modelId: string, settings?: ClaudeCodeSettings) => LanguageModel;
+
+let claudeCodeProvider: ClaudeCodeFactory | undefined;
+
+/**
+ * Memoized lazy import. Kept lazy so a box without the CLI still serves the
+ * key-backed routes instead of failing at module load.
+ */
+export async function getClaudeCodeProvider(): Promise<ClaudeCodeFactory> {
+  if (!claudeCodeProvider) {
+    const mod = await import('ai-sdk-provider-claude-code');
+    const provider =
+      typeof mod.createClaudeCode === 'function' ? mod.createClaudeCode() : mod.claudeCode;
+    claudeCodeProvider = provider as unknown as ClaudeCodeFactory;
+  }
+  return claudeCodeProvider;
+}
+
+/** Subprocess env for the CLI. See CLAUDE_CODE_MAX_OUTPUT_TOKENS note above. */
+export function claudeCliEnv(): Record<string, string> {
+  return {
+    CLAUDE_CODE_MAX_OUTPUT_TOKENS: process.env.CLAUDE_CODE_MAX_OUTPUT_TOKENS || '64000',
+  };
 }
