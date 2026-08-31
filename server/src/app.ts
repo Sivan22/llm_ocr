@@ -2,6 +2,8 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { healthRoutes } from './routes/health.js';
+import { ocrRoutes } from './routes/ocr.js';
+import { correctRoutes } from './routes/correct.js';
 
 const DEFAULT_ORIGINS = ['http://localhost:5173', 'http://127.0.0.1:5173'];
 
@@ -21,5 +23,7 @@ app.use('*', cors({
 }));
 
 app.route('/api/health', healthRoutes);
+app.route('/api/ocr', ocrRoutes);
+app.route('/api/correct', correctRoutes);
 
 export default app;
