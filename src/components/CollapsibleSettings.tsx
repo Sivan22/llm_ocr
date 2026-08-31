@@ -2,12 +2,13 @@
 import { useState } from 'react';
 import { useI18n } from '../i18n/I18nContext';
 import { useSettings } from '../store/SettingsContext';
+import { hasApiKey } from '../ai/providers';
 import { SettingsPanel } from './SettingsPanel';
 
 export function CollapsibleSettings() {
   const { t } = useI18n();
   const { settings } = useSettings();
-  const [open, setOpen] = useState<boolean>(() => !settings.apiKeys[settings.route]);
+  const [open, setOpen] = useState<boolean>(() => !hasApiKey(settings));
 
   return (
     <details

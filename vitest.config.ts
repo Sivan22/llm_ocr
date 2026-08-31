@@ -7,5 +7,10 @@ const __dirname = path.dirname(__filename);
 
 export default defineConfig({
   test: { environment: 'jsdom' },
-  resolve: { alias: { '@': path.resolve(__dirname, 'src') } },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, 'src'),
+      '@shared': path.resolve(__dirname, 'shared'),
+    },
+  },
 });

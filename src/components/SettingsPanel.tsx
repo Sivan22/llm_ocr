@@ -9,14 +9,15 @@ import { Slider } from './ui/slider';
 
 const ROUTES: Route[] = ['anthropic', 'google', 'openai', 'gateway'];
 
-const KEY_FIELD: Record<Route, keyof ApiKeys> = {
+const KEY_FIELD: Record<Route, keyof ApiKeys | null> = {
   anthropic: 'anthropic',
   google: 'google',
   openai: 'openai',
   gateway: 'gateway',
+  'claude-cli': null,
 };
 
-const KEY_URLS: Record<Route, string> = {
+const KEY_URLS: Partial<Record<Route, string>> = {
   anthropic: 'https://console.anthropic.com/settings/keys',
   google: 'https://aistudio.google.com/apikey',
   openai: 'https://platform.openai.com/api-keys',
@@ -28,12 +29,14 @@ export const PROVIDER_BATCH_DEFAULTS: Record<Route, number> = {
   anthropic: 10,
   openai: 10,
   gateway: 50,
+  'claude-cli': 2,
 };
 
 export function SettingsPanel() {
   const { settings, update, updateApiKeys, reset } = useSettings();
   const { t } = useI18n();
   const models = modelsForRoute(settings.route);
+  const keyField = KEY_FIELD[settings.route];
 
   return (
     <div className="space-y-6">
@@ -69,28 +72,30 @@ export function SettingsPanel() {
         </div>
       </div>
 
-      <div>
-        <div className="flex items-center justify-between gap-2">
-          <Label>{t('settings.apiKey', { provider: t(`route.${settings.route}`) })}</Label>
-          <a
-            href={KEY_URLS[settings.route]}
-            target="_blank"
-            rel="noreferrer"
-            className="text-xs text-blue-600 underline-offset-2 hover:underline"
-          >
-            {t('settings.getKey')}
-          </a>
+      {keyField && (
+        <div>
+          <div className="flex items-center justify-between gap-2">
+            <Label>{t('settings.apiKey', { provider: t(`route.${settings.route}`) })}</Label>
+            <a
+              href={KEY_URLS[settings.route] ?? '#'}
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs text-blue-600 underline-offset-2 hover:underline"
+            >
+              {t('settings.getKey')}
+            </a>
+          </div>
+          <Input
+            type="password"
+            value={settings.apiKeys[keyField]}
+            onChange={(e) => updateApiKeys({ [keyField]: e.target.value })}
+            placeholder={t('settings.apiKeyPlaceholder')}
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            {t('settings.apiKeyNote')}
+          </p>
         </div>
-        <Input
-          type="password"
-          value={settings.apiKeys[KEY_FIELD[settings.route]]}
-          onChange={(e) => updateApiKeys({ [KEY_FIELD[settings.route]]: e.target.value })}
-          placeholder={t('settings.apiKeyPlaceholder')}
-        />
-        <p className="text-xs text-gray-500 mt-1">
-          {t('settings.apiKeyNote')}
-        </p>
-      </div>
+      )}
 
       <div>
         <Label>{t('settings.batchSize', { n: settings.batchSize })}</Label>

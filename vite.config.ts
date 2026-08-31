@@ -13,6 +13,9 @@ export default defineConfig({
   optimizeDeps: { exclude: ['mupdf'] },
   worker: { format: 'es' },
   resolve: {
-    alias: { '@': path.resolve(__dirname, 'src') },
+    alias: {
+      '@': path.resolve(__dirname, 'src'),
+      '@shared': path.resolve(__dirname, 'shared'),
+    },
   },
 });

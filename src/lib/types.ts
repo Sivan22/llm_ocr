@@ -1,15 +1,5 @@
-export type Route = 'anthropic' | 'google' | 'openai' | 'gateway';
-
-export type Model =
-  | 'claude-fable-5'
-  | 'claude-opus-4-8'
-  | 'claude-sonnet-5'
-  | 'gemini-3.1-pro'
-  | 'gemini-3.1-flash-lite'
-  | 'gemini-3.5-flash'
-  | 'gemini-2.5-flash'
-  | 'gpt-4o'
-  | 'gpt-4o-mini';
+export type { Route, Model, Correction } from '../../shared/ai/types';
+import type { Route, Model } from '../../shared/ai/types';
 
 export type Status = 'pending' | 'running' | 'ok' | 'error' | 'edited';
 
@@ -22,14 +12,6 @@ export interface PageResult {
   error?: string;
   tokensIn?: number;
   tokensOut?: number;
-}
-
-export interface Correction {
-  id: string;
-  old: string;
-  new: string;
-  reason: string;
-  status: 'pending' | 'accepted' | 'rejected';
 }
 
 export interface ApiKeys {

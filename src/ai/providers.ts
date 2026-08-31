@@ -2,50 +2,13 @@ import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createGateway, type LanguageModel } from 'ai';
-import type { Model, Route, Settings } from '../lib/types';
+import type { Settings } from '../lib/types';
 
-const DIRECT_MODEL_ID: Record<Route, Partial<Record<Model, string>>> = {
-  anthropic: {
-    'claude-fable-5':    'claude-fable-5',
-    'claude-opus-4-8':   'claude-opus-4-8',
-    'claude-sonnet-5':   'claude-sonnet-5',
-  },
-  google: {
-    'gemini-3.1-pro':        'gemini-3.1-pro-preview',
-    'gemini-3.1-flash-lite': 'gemini-3.1-flash-lite-preview',
-    'gemini-3.5-flash':      'gemini-3.5-flash',
-    'gemini-2.5-flash':      'gemini-2.5-flash',
-  },
-  openai: {
-    'gpt-4o':      'gpt-4o',
-    'gpt-4o-mini': 'gpt-4o-mini',
-  },
-  gateway: {
-    'claude-fable-5':    'anthropic/claude-fable-5',
-    'claude-opus-4-8':   'anthropic/claude-opus-4-8',
-    'claude-sonnet-5':   'anthropic/claude-sonnet-5',
-    'gemini-3.1-pro':    'google/gemini-3.1-pro-preview',
-    'gemini-3.5-flash':  'google/gemini-3.5-flash',
-    'gpt-4o':            'openai/gpt-4o',
-    'gpt-4o-mini':       'openai/gpt-4o-mini',
-  },
-};
-
-export function isRouteModelValid(route: Route, model: Model): boolean {
-  return DIRECT_MODEL_ID[route]?.[model] !== undefined;
-}
-
-export function resolveModelId(route: Route, model: Model): string {
-  const id = DIRECT_MODEL_ID[route]?.[model];
-  if (!id) throw new Error(`Model "${model}" is not available on route "${route}".`);
-  return id;
-}
-
-export function modelsForRoute(route: Route): Model[] {
-  return Object.keys(DIRECT_MODEL_ID[route] ?? {}) as Model[];
-}
+export { isRouteModelValid, resolveModelId, modelsForRoute } from '../../shared/ai/models';
+import { resolveModelId } from '../../shared/ai/models';
 
 export function hasApiKey(settings: Settings): boolean {
+  if (settings.route === 'claude-cli') return true;
   return settings.apiKeys[settings.route].trim().length > 0;
 }
 
@@ -76,5 +39,7 @@ export function createModel(settings: Settings): LanguageModel {
       if (!key) throw new Error('Gateway API key is required.');
       return createGateway({ apiKey: key })(id);
     }
+    case 'claude-cli':
+      throw new Error('The Claude CLI route runs on the server. Set VITE_API_URL to use it.');
   }
 }
