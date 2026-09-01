@@ -1,13 +1,16 @@
+import { useEffect, useMemo, useState } from 'react';
 import { useSettings } from '../store/SettingsContext';
+import { useServerStatus } from '../store/ServerStatusContext';
 import { useI18n } from '../i18n/I18nContext';
-import { modelsForRoute } from '../ai/providers';
+import { modelsForRoute, isRouteModelValid } from '../ai/providers';
+import { API_BASE } from '../lib/api';
 import type { Route, Model, ApiKeys } from '../lib/types';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select } from './ui/select';
 import { Slider } from './ui/slider';
 
-const ROUTES: Route[] = ['anthropic', 'google', 'openai', 'gateway'];
+const BROWSER_ROUTES: Route[] = ['anthropic', 'google', 'openai', 'gateway'];
 
 const KEY_FIELD: Record<Route, keyof ApiKeys | null> = {
   anthropic: 'anthropic',
@@ -34,8 +37,35 @@ export const PROVIDER_BATCH_DEFAULTS: Record<Route, number> = {
 
 export function SettingsPanel() {
   const { settings, update, updateApiKeys, reset } = useSettings();
+  const { status, probing, refresh } = useServerStatus();
   const { t } = useI18n();
+  const [unavailableNotice, setUnavailableNotice] = useState<string | null>(null);
+
+  // Memoized so a fresh array identity doesn't re-fire the fallback effect below
+  // on every render.
+  const routes = useMemo<Route[]>(
+    () => (status.available
+      ? [...status.routes, ...(status.claudeCli ? (['claude-cli'] as Route[]) : [])]
+      : BROWSER_ROUTES),
+    [status.available, status.claudeCli, status.routes],
+  );
+
+  // Guard against a persisted route the current server can't serve — without
+  // this, resolveModelId throws mid-run.
+  useEffect(() => {
+    if (probing || routes.length === 0 || routes.includes(settings.route)) return;
+    const fallback = routes[0];
+    const models = modelsForRoute(fallback);
+    setUnavailableNotice(t('settings.routeUnavailable', { route: t(`route.${fallback}`) }));
+    update({
+      route: fallback,
+      model: models[0] as Model,
+      batchSize: PROVIDER_BATCH_DEFAULTS[fallback],
+    });
+  }, [probing, routes, settings.route, update]);
+
   const models = modelsForRoute(settings.route);
+  const modelValue = isRouteModelValid(settings.route, settings.model) ? settings.model : (models[0] as Model);
   const keyField = KEY_FIELD[settings.route];
 
   return (
@@ -49,6 +79,7 @@ export function SettingsPanel() {
               const newRoute = e.target.value as Route;
               const validModels = modelsForRoute(newRoute);
               const nextModel = validModels.includes(settings.model) ? settings.model : (validModels[0] as Model);
+              setUnavailableNotice(null);
               update({
                 route: newRoute,
                 model: nextModel,
@@ -56,7 +87,7 @@ export function SettingsPanel() {
               });
             }}
           >
-            {ROUTES.map((r) => (
+            {routes.map((r) => (
               <option key={r} value={r}>{t(`route.${r}`)}</option>
             ))}
           </Select>
@@ -64,7 +95,7 @@ export function SettingsPanel() {
         <div>
           <Label>{t('settings.model')}</Label>
           <Select
-            value={settings.model}
+            value={modelValue}
             onChange={(e) => update({ model: e.target.value as Model })}
           >
             {models.map((m) => <option key={m} value={m}>{m}</option>)}
@@ -72,7 +103,9 @@ export function SettingsPanel() {
         </div>
       </div>
 
-      {keyField && (
+      {status.available ? (
+        <p className="text-xs text-gray-500">{t('settings.serverManaged', { url: API_BASE })}</p>
+      ) : keyField ? (
         <div>
           <div className="flex items-center justify-between gap-2">
             <Label>{t('settings.apiKey', { provider: t(`route.${settings.route}`) })}</Label>
@@ -95,6 +128,19 @@ export function SettingsPanel() {
             {t('settings.apiKeyNote')}
           </p>
         </div>
+      ) : null}
+
+      {!status.available && API_BASE && !probing && (
+        <p className="text-xs text-amber-700">
+          {t('settings.serverOffline', { url: API_BASE })}{' '}
+          <button type="button" className="underline" onClick={refresh}>
+            {t('settings.serverRetry')}
+          </button>
+        </p>
+      )}
+
+      {unavailableNotice && (
+        <p className="text-xs text-amber-700">{unavailableNotice}</p>
       )}
 
       <div>

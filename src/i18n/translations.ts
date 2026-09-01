@@ -17,6 +17,7 @@ const en: Dict = {
 
   // CostSummary
   'cost.estimated': 'Estimated: {in} in / {out} out tokens — ${cost}',
+  'cost.subscription': 'Tokens: {in} in / {out} out — billed to your Claude subscription',
 
   // SettingsPanel
   'settings.provider': 'Provider',
@@ -29,11 +30,16 @@ const en: Dict = {
   'settings.ocrPrompt': 'OCR Prompt',
   'settings.ocrPromptHint': 'Instructions sent to the model for transcribing each page image to text.',
   'settings.reset': 'Reset all settings to defaults',
+  'settings.serverManaged': 'Keys are held by the server at {url} — nothing is stored in this browser.',
+  'settings.serverOffline': 'Server not reachable at {url}. Using in-browser calls with your own key.',
+  'settings.serverRetry': 'Retry connection',
+  'settings.routeUnavailable': 'The saved provider is not available on this server; switched to {route}.',
 
   'route.anthropic': 'Anthropic',
   'route.google': 'Google',
   'route.openai': 'OpenAI',
   'route.gateway': 'Vercel AI Gateway',
+  'route.claude-cli': 'Claude CLI (local subscription)',
 
   // FileDrop
   'file.errorMixed': 'Drop one PDF, one or more images, or a PDF plus images.',
@@ -200,6 +206,7 @@ const he: Dict = {
 
   // CostSummary
   'cost.estimated': 'הערכה: {in} כניסה / {out} יציאה טוקנים — ${cost}',
+  'cost.subscription': 'טוקנים: {in} נכנס / {out} יוצא — נזקף למנוי Claude שלך',
 
   // SettingsPanel
   'settings.provider': 'ספק',
@@ -212,11 +219,16 @@ const he: Dict = {
   'settings.ocrPrompt': 'פרומפט OCR',
   'settings.ocrPromptHint': 'שנה את ההנחיות בהתאם לצורך, הנחיות מדוייקות יניבו תוצאות טובות יותר.',
   'settings.reset': 'אפס את כל ההגדרות לברירת מחדל',
+  'settings.serverManaged': 'המפתחות נשמרים בשרת בכתובת {url} — דבר אינו נשמר בדפדפן זה.',
+  'settings.serverOffline': 'השרת בכתובת {url} אינו זמין. הקריאות מתבצעות מהדפדפן עם המפתח שלך.',
+  'settings.serverRetry': 'נסה להתחבר שוב',
+  'settings.routeUnavailable': 'הספק השמור אינו זמין בשרת זה; הוחלף ל-{route}.',
 
   'route.anthropic': 'Anthropic',
   'route.google': 'Google',
   'route.openai': 'OpenAI',
   'route.gateway': 'Vercel AI Gateway',
+  'route.claude-cli': 'Claude CLI (מנוי מקומי)',
 
   // FileDrop
   'file.errorMixed': 'גרור PDF אחד, תמונה אחת או יותר, או PDF יחד עם תמונות.',
