@@ -1,14 +1,15 @@
 // src/components/CollapsibleSettings.tsx
 import { useState } from 'react';
 import { useI18n } from '../i18n/I18nContext';
-import { useSettings } from '../store/SettingsContext';
-import { hasApiKey } from '../ai/providers';
+import { useCanRun } from '../hooks/useCanRun';
 import { SettingsPanel } from './SettingsPanel';
 
 export function CollapsibleSettings() {
   const { t } = useI18n();
-  const { settings } = useSettings();
-  const [open, setOpen] = useState<boolean>(() => !hasApiKey(settings));
+  // Open on load exactly when a run is impossible — the same gate the Run button
+  // uses, so "Settings is open" always means "there is something to fix here".
+  const { canRun } = useCanRun();
+  const [open, setOpen] = useState<boolean>(() => !canRun);
 
   return (
     <details

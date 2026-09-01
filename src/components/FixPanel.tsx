@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { useProject } from '../store/ProjectContext';
 import { useSettings } from '../store/SettingsContext';
 import { useI18n } from '../i18n/I18nContext';
-import { hasApiKey } from '../ai/providers';
 import { runCorrectPage } from '../ai/dispatch';
+import { useCanRun } from '../hooks/useCanRun';
 import { useServerStatus } from '../store/ServerStatusContext';
 import { renderPageToPng } from '../pdf/render';
 import { substitute } from '../runner/prompt';
@@ -21,6 +21,8 @@ export function FixPanel() {
   const { settings } = useSettings();
   const { t, lang } = useI18n();
   const { status: serverStatus } = useServerStatus();
+  // Same server-aware gate the Run toolbar uses — see src/ai/canRun.ts.
+  const { canRun, blockedMessage } = useCanRun();
   const {
     loadedDoc, fileHash, currentPageNum, pages, setPage,
     corrections, setCorrections,
@@ -207,7 +209,7 @@ export function FixPanel() {
             className="font-mono text-xs"
             placeholder={t('fix.promptPlaceholder')}
           />
-          {!hasApiKey(settings) ? (
+          {!canRun ? (
             <Tooltip>
               <TooltipTrigger asChild>
                 <span tabIndex={0} className="inline-flex">
@@ -219,7 +221,7 @@ export function FixPanel() {
                   </Button>
                 </span>
               </TooltipTrigger>
-              <TooltipContent>{t('batch.apiKeyMissing', { provider: t(`route.${settings.route}`) })}</TooltipContent>
+              <TooltipContent>{blockedMessage}</TooltipContent>
             </Tooltip>
           ) : (
             <Button
@@ -232,9 +234,9 @@ export function FixPanel() {
           )}
         </div>
       </details>
-      {!hasApiKey(settings) && (
+      {!canRun && (
         <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
-          {t('batch.apiKeyMissing', { provider: t(`route.${settings.route}`) })}
+          {blockedMessage}
         </p>
       )}
       <p className="text-xs text-gray-600">{status}</p>

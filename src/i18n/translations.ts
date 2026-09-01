@@ -78,6 +78,8 @@ const en: Dict = {
   'batch.pageOk': 'Page {n} OK ({chars} chars)',
   'batch.pageFailed': 'Page {n} FAILED: {err}',
   'batch.apiKeyMissing': 'Add your {provider} API key in Settings to enable runs.',
+  'batch.routeNotOnServer': 'The server has no {provider} configured. Pick another provider in Settings.',
+  'batch.serverRequired': '{provider} only runs through the server, which is not reachable. Pick another provider in Settings.',
 
   // PageList / PageThumbs
   'pages.status.pending': 'pending',
@@ -267,6 +269,8 @@ const he: Dict = {
   'batch.pageOk': 'עמוד {n} הושלם ({chars} תווים)',
   'batch.pageFailed': 'עמוד {n} נכשל: {err}',
   'batch.apiKeyMissing': 'הוסף מפתח API של {provider} בהגדרות כדי להפעיל.',
+  'batch.routeNotOnServer': 'בשרת לא מוגדר {provider}. בחר ספק אחר בהגדרות.',
+  'batch.serverRequired': '{provider} פועל רק דרך השרת, והשרת אינו זמין. בחר ספק אחר בהגדרות.',
 
   // PageList / PageThumbs
   'pages.status.pending': 'ממתין',

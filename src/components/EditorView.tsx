@@ -3,7 +3,8 @@ import { useProject } from '../store/ProjectContext';
 import { useSettings } from '../store/SettingsContext';
 import { useI18n } from '../i18n/I18nContext';
 import { createModel } from '../ai/providers';
-import { ocrPage } from '../ai/ocr';
+import { runOcrPage } from '../ai/dispatch';
+import { useServerStatus } from '../store/ServerStatusContext';
 import { renderPageToPng } from '../pdf/render';
 import { savePageResult } from '../store/persistence';
 import { savePageImage } from '../store/pageImagesStore';
@@ -20,6 +21,7 @@ export function EditorView() {
   } = useProject();
   const { settings, updatePrompts } = useSettings();
   const { t } = useI18n();
+  const { status: serverStatus } = useServerStatus();
 
   const [showPrompt, setShowPrompt] = useState(false);
   const [running, setRunning] = useState(false);
@@ -38,12 +40,19 @@ export function EditorView() {
     const existing = currentPage?.text?.trim() ?? '';
     if (existing && !window.confirm(t('editor.confirmOverwrite'))) return;
 
-    let model;
-    try {
-      model = createModel(settings);
-    } catch (e) {
-      setStatus(t('editor.ocrError', { msg: e instanceof Error ? e.message : String(e) }));
-      return;
+    // Browser-direct only: keep the eager preflight so a structural config error
+    // (missing key, claude-cli with no server) fails fast with one clear message
+    // before the page flips to 'running' or anything is persisted. In server mode
+    // createModel is the wrong question entirely — it throws for claude-cli by
+    // design — so the call goes straight through the dispatcher, exactly as
+    // useBatchRunner does.
+    if (!serverStatus.available) {
+      try {
+        createModel(settings);
+      } catch (e) {
+        setStatus(t('editor.ocrError', { msg: e instanceof Error ? e.message : String(e) }));
+        return;
+      }
     }
 
     setRunning(true);
@@ -52,7 +61,11 @@ export function EditorView() {
     try {
       const img = await renderPageToPng(loadedDoc, currentPageNum);
       savePageImage(fileHash, currentPageNum, img);
-      const r = await ocrPage(model, img.dataUrl, settings.prompts.ocr);
+      const r = await runOcrPage({
+        settings,
+        serverAvailable: serverStatus.available,
+        imageDataUrl: img.dataUrl,
+      });
       const result = {
         pageNum: currentPageNum,
         text: r.text,

@@ -2,10 +2,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { LayoutGrid, Grid3x3, List, Play, Square, X, Clock, AlertTriangle, Check, ListChecks } from 'lucide-react';
 import { useProject } from '../store/ProjectContext';
-import { useSettings } from '../store/SettingsContext';
 import { useI18n } from '../i18n/I18nContext';
 import { useBatchRunner } from '../hooks/useBatchRunner';
-import { hasApiKey } from '../ai/providers';
+import { useCanRun } from '../hooks/useCanRun';
 import { parsePageRange } from '../lib/pageRange';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -27,13 +26,14 @@ const VIEW_ICONS: Record<ThumbMode, typeof LayoutGrid> = {
 
 export function RunToolbar({ mode, onModeChange }: Props) {
   const { t } = useI18n();
-  const { settings } = useSettings();
   const { loadedDoc, pageOrder, selectedPages, clearSelection, setSelectedPages, setSelectionAnchor, selectAllPages } = useProject();
   const { running, runSelected, stop, pendingPages, failedPages } = useBatchRunner();
   const [rangeInput, setRangeInput] = useState('');
 
-  const keyMissing = !hasApiKey(settings);
-  const keyMissingMsg = t('batch.apiKeyMissing', { provider: t(`route.${settings.route}`) });
+  // Server-aware gate: in server mode the keys live on the server (Settings even
+  // hides the key field), so a pasted-key check would disable Run with no escape.
+  const { canRun, blockedMessage } = useCanRun();
+  const runBlocked = !canRun;
 
   const visibleCount = pageOrder.length;
   const { pages: rangeDisplayIdxs, error: rangeError } = useMemo(
@@ -133,7 +133,7 @@ export function RunToolbar({ mode, onModeChange }: Props) {
             <Square className="h-4 w-4 me-1 fill-current" />
             {t('batch.stop')}
           </Button>
-        ) : keyMissing ? (
+        ) : runBlocked ? (
           <Tooltip>
             <TooltipTrigger asChild>
               <span tabIndex={0} className="ms-2 inline-flex">
@@ -145,7 +145,7 @@ export function RunToolbar({ mode, onModeChange }: Props) {
                 </Button>
               </span>
             </TooltipTrigger>
-            <TooltipContent>{keyMissingMsg}</TooltipContent>
+            <TooltipContent>{blockedMessage}</TooltipContent>
           </Tooltip>
         ) : (
           <Button
@@ -193,9 +193,9 @@ export function RunToolbar({ mode, onModeChange }: Props) {
         </div>
       </div>
 
-      {keyMissing && (
+      {runBlocked && (
         <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
-          {keyMissingMsg}
+          {blockedMessage}
         </p>
       )}
 

@@ -7,8 +7,16 @@ import type { Settings } from '../lib/types';
 export { isRouteModelValid, resolveModelId, modelsForRoute } from '../../shared/ai/models';
 import { resolveModelId } from '../../shared/ai/models';
 
+/**
+ * Browser-direct only: is there a pasted key for the selected route?
+ *
+ * `claude-cli` has no browser-pasteable key — it only ever runs as a server-side
+ * subprocess — so browser-direct can never satisfy it. Callers gating the Run
+ * button must use `runBlocker`/`canRun` (src/ai/canRun.ts), which consults the
+ * server status first and falls back to this only in browser-direct mode.
+ */
 export function hasApiKey(settings: Settings): boolean {
-  if (settings.route === 'claude-cli') return true;
+  if (settings.route === 'claude-cli') return false;
   return settings.apiKeys[settings.route].trim().length > 0;
 }
 

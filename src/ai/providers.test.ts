@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isRouteModelValid, resolveModelId, createModel } from './providers';
+import { isRouteModelValid, resolveModelId, createModel, hasApiKey } from './providers';
 import type { Settings } from '../lib/types';
 import { DEFAULT_SETTINGS } from '../store/settings';
 
@@ -23,6 +23,19 @@ describe('providers', () => {
     const s: Settings = { ...DEFAULT_SETTINGS, route: 'anthropic', model: 'claude-opus-4-8' };
     s.apiKeys = { anthropic: '', google: '', openai: '', gateway: '' };
     expect(() => createModel(s)).toThrow(/Anthropic API key/);
+  });
+
+  it('hasApiKey reports the pasted key for browser-direct routes', () => {
+    const s: Settings = { ...DEFAULT_SETTINGS, route: 'gateway', model: 'gemini-3.1-pro' };
+    expect(hasApiKey({ ...s, apiKeys: { anthropic: '', google: '', openai: '', gateway: '' } })).toBe(false);
+    expect(hasApiKey({ ...s, apiKeys: { anthropic: '', google: '', openai: '', gateway: ' ' } })).toBe(false);
+    expect(hasApiKey({ ...s, apiKeys: { anthropic: '', google: '', openai: '', gateway: 'sk' } })).toBe(true);
+  });
+
+  it('hasApiKey is false for claude-cli — no browser key can enable a server-only route', () => {
+    // It used to hard-return true, which left Run enabled with the server down.
+    const s: Settings = { ...DEFAULT_SETTINGS, route: 'claude-cli', model: 'cli-opus' };
+    expect(hasApiKey(s)).toBe(false);
   });
 
   it('createModel succeeds with key present', () => {
