@@ -13,9 +13,14 @@ vi.mock('../../shared/ai/ocr', () => ({
   ocrPage: vi.fn(async () => ({ text: 'browser' })),
 }));
 
-import { effectiveConcurrency, runOcrPage, SERVER_CONCURRENCY_CAP, CLAUDE_CLI_CONCURRENCY } from './dispatch';
-import { ocrPageViaServer } from '../lib/api';
+vi.mock('../../shared/ai/correct', () => ({
+  correctPage: vi.fn(async () => ({ corrections: [{ id: 'browser', old: 'a', new: 'b', reason: '', status: 'pending' }] })),
+}));
+
+import { effectiveConcurrency, runOcrPage, runCorrectPage, SERVER_CONCURRENCY_CAP, CLAUDE_CLI_CONCURRENCY } from './dispatch';
+import { ocrPageViaServer, correctPageViaServer } from '../lib/api';
 import { ocrPage } from '../../shared/ai/ocr';
+import { correctPage } from '../../shared/ai/correct';
 import { DEFAULT_SETTINGS } from '../store/settings';
 
 describe('effectiveConcurrency', () => {
@@ -56,5 +61,28 @@ describe('runOcrPage', () => {
     });
     expect(res.text).toBe('browser');
     expect(ocrPage).toHaveBeenCalled();
+  });
+});
+
+describe('runCorrectPage', () => {
+  const settings = { ...DEFAULT_SETTINGS, route: 'gateway' as const, model: 'gemini-3.1-pro' as const };
+  const args = {
+    settings,
+    imageDataUrl: 'data:image/png;base64,aGk=',
+    filledPrompt: 'fix it',
+    lang: 'en' as const,
+  };
+
+  it('uses the server when it is available', async () => {
+    const res = await runCorrectPage({ ...args, serverAvailable: true });
+    expect(res.corrections).toEqual([]);
+    expect(correctPageViaServer).toHaveBeenCalled();
+    expect(correctPage).not.toHaveBeenCalled();
+  });
+
+  it('falls back to the in-browser provider when the server is absent', async () => {
+    const res = await runCorrectPage({ ...args, serverAvailable: false });
+    expect(res.corrections[0]?.id).toBe('browser');
+    expect(correctPage).toHaveBeenCalled();
   });
 });

@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import { useProject } from '../store/ProjectContext';
 import { useSettings } from '../store/SettingsContext';
 import { useI18n } from '../i18n/I18nContext';
+import { createModel } from '../ai/providers';
 import { effectiveConcurrency, runOcrPage } from '../ai/dispatch';
 import { useServerStatus } from '../store/ServerStatusContext';
 import { renderPageToPng } from '../pdf/render';
@@ -70,6 +71,20 @@ export function BatchRunnerProvider({ children }: { children: ReactNode }) {
 
   const start = async (pageNums: number[]) => {
     if (!loadedDoc || pageNums.length === 0 || running) return;
+    // Server mode never touches createModel (it throws by design for claude-cli,
+    // and browser-direct model construction is irrelevant once the server is up).
+    // Browser-direct: fail fast on a structural/config error (bad or missing key,
+    // claude-cli selected with no server) before any page flips to 'running' or any
+    // persistence write happens — matches today's behavior. Transient failures during
+    // the actual call still go through runBatch's retry path below.
+    if (!serverStatus.available) {
+      try {
+        createModel(settings);
+      } catch (e) {
+        append(t('batch.errorPrefix', { msg: e instanceof Error ? e.message : String(e) }));
+        return;
+      }
+    }
     setRunning(true);
     abortRef.current = new AbortController();
     const processed = new Set<number>();
