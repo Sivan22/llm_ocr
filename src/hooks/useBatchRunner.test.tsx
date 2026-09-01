@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { BatchRunnerProvider, useBatchRunner } from './useBatchRunner';
+import { ApiRequestError } from '../lib/api';
 
 // This repo's toolchain has no @testing-library/react (see src/components/SettingsPanel.test.tsx
 // for the established renderToString-based pattern). That pattern doesn't run effects and can't
@@ -56,7 +57,7 @@ vi.mock('../store/ServerStatusContext', () => ({
 const createModelMock = vi.hoisted(() => vi.fn());
 vi.mock('../ai/providers', () => ({ createModel: createModelMock }));
 
-const runOcrPageMock = vi.hoisted(() => vi.fn(async () => ({ text: 'ok' })));
+const runOcrPageMock = vi.hoisted(() => vi.fn(async (): Promise<{ text: string }> => ({ text: 'ok' })));
 vi.mock('../ai/dispatch', () => ({
   effectiveConcurrency: (n: number) => n,
   runOcrPage: runOcrPageMock,
@@ -76,7 +77,8 @@ vi.mock('../store/runLogStore', () => ({
   saveRunLog: vi.fn(),
 }));
 
-const runBatchMock = vi.hoisted(() => vi.fn(async () => {}));
+type WorkFn = (item: number, signal?: AbortSignal) => Promise<{ ok: boolean; error?: string }>;
+const runBatchMock = vi.hoisted(() => vi.fn(async (_opts: { work: WorkFn }) => {}));
 vi.mock('../runner/orchestrator', () => ({ runBatch: runBatchMock }));
 
 type Api = ReturnType<typeof useBatchRunner>;
@@ -149,6 +151,44 @@ describe('BatchRunnerProvider start() — structural-error preflight', () => {
     expect(project.setPageStatus).toHaveBeenCalledWith(0, 'running');
     expect(project.setPageStatus).toHaveBeenCalledWith(1, 'running');
 
+    unmount();
+  });
+});
+
+describe('BatchRunnerProvider work() — which server failures are worth retrying', () => {
+  async function capturedWork(): Promise<{ work: WorkFn; unmount: () => void }> {
+    serverStatus.current = { available: true, claudeCli: false, routes: ['gateway'] };
+    const { getApi, unmount } = await mount();
+    await act(async () => { await getApi().runSelected(); });
+    return { work: runBatchMock.mock.calls[0][0].work, unmount };
+  }
+
+  it('turns a structural 400 into a terminal {ok:false} instead of feeding the retry loop', async () => {
+    // Server mode has no preflight, so before this a 400 ("AI_GATEWAY_API_KEY
+    // is not set on the server.") was retried 3x with 5s/10s backoff per page:
+    // 50 pages x ~15s of dead waiting and 150 pointless requests.
+    const { work, unmount } = await capturedWork();
+    runOcrPageMock.mockRejectedValueOnce(
+      new ApiRequestError('AI_GATEWAY_API_KEY is not set on the server.', 400),
+    );
+    await expect(work(0, undefined)).resolves.toEqual({
+      ok: false,
+      error: 'AI_GATEWAY_API_KEY is not set on the server.',
+    });
+    unmount();
+  });
+
+  it('keeps throwing a 502 so runBatch still retries an upstream hiccup', async () => {
+    const { work, unmount } = await capturedWork();
+    runOcrPageMock.mockRejectedValueOnce(new ApiRequestError('upstream exploded', 502));
+    await expect(work(0, undefined)).rejects.toThrow(/upstream exploded/);
+    unmount();
+  });
+
+  it('keeps throwing a network error so runBatch still retries it', async () => {
+    const { work, unmount } = await capturedWork();
+    runOcrPageMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    await expect(work(0, undefined)).rejects.toThrow(/Failed to fetch/);
     unmount();
   });
 });

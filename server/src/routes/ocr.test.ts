@@ -56,6 +56,21 @@ describe('POST /api/ocr', () => {
     expect(vi.mocked(ocrPage).mock.calls[0][1]).toBe('data:image/png;base64,aGVsbG8=');
   });
 
+  it('accepts the webp and gif pages the browser-direct path already handled', async () => {
+    // DropStrip takes image/* and passes the File's own type through, so these
+    // reach the server for real; rejecting them made the client retry 3x.
+    for (const imageMediaType of ['image/webp', 'image/gif']) {
+      const res = await post({ ...body, imageMediaType });
+      expect(res.status).toBe(200);
+    }
+    expect(vi.mocked(ocrPage).mock.calls[0][1]).toBe('data:image/webp;base64,aGVsbG8=');
+  });
+
+  it('still rejects an image type no provider takes', async () => {
+    const res = await post({ ...body, imageMediaType: 'image/bmp' });
+    expect(res.status).toBe(400);
+  });
+
   it('rejects an image over the 15MB base64 cap', async () => {
     const res = await post({ ...body, image: 'a'.repeat(15_000_001) });
     expect(res.status).toBe(400);

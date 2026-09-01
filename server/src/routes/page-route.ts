@@ -2,7 +2,7 @@ import type { Context } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import { z } from 'zod';
 import type { LanguageModel } from 'ai';
-import type { Model, Route } from '../../../shared/ai/types.js';
+import { IMAGE_MEDIA_TYPES, type Model, type Route } from '../../../shared/ai/types.js';
 import { isRouteModelValid } from '../../../shared/ai/models.js';
 import { createServerModel } from '../ai/providers.js';
 
@@ -39,7 +39,7 @@ export const pageRequestSchema = z.object({
   model: z.string().min(1),
   // Raw base64, no data: prefix. Capped to bound request memory.
   image: z.string().min(1).max(15_000_000),
-  imageMediaType: z.enum(['image/png', 'image/jpeg']),
+  imageMediaType: z.enum(IMAGE_MEDIA_TYPES),
   prompt: z.string().min(1),
 });
 

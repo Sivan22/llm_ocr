@@ -20,10 +20,18 @@ import type { Settings } from '../lib/types';
 // against the rendered HTML string instead of a DOM/testing-library query.
 // renderToString does not run effects, which is fine here — none of these
 // four cases depends on the fallback effect having fired.
-const status = vi.hoisted(() => ({ current: { available: false, claudeCli: false, routes: [] } as ServerStatus }));
+const status = vi.hoisted(() => ({ current: { available: false, reachable: false, claudeCli: false, routes: [] } as ServerStatus }));
 
 vi.mock('../store/ServerStatusContext', () => ({
   useServerStatus: () => ({ status: status.current, probing: false, refresh: vi.fn() }),
+}));
+
+// API_BASE is read from import.meta.env at module load and is empty in tests
+// (VITE_API_URL unset — the GitHub Pages build). The server-mode notices are
+// gated on it, so it has to be non-empty here.
+vi.mock('../lib/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../lib/api')>()),
+  API_BASE: 'http://localhost:3102',
 }));
 
 const SETTINGS_STORAGE_KEY = 'llm_ocr_web:settings:v1';
@@ -36,29 +44,47 @@ function renderPanel(): string {
 
 describe('SettingsPanel', () => {
   it('shows the API key field in browser-direct mode', () => {
-    status.current = { available: false, claudeCli: false, routes: [] };
+    status.current = { available: false, reachable: false, claudeCli: false, routes: [] };
     const html = renderPanel();
     expect(html).toMatch(/paste your key/i);
     expect(html).not.toMatch(/held by the server/i);
   });
 
   it('replaces the key field with a server note in server mode', () => {
-    status.current = { available: true, claudeCli: false, routes: ['gateway'] };
+    status.current = { available: true, reachable: true, claudeCli: false, routes: ['gateway'] };
     const html = renderPanel();
     expect(html).not.toMatch(/paste your key/i);
     expect(html).toMatch(/held by the server/i);
   });
 
   it('hides claude-cli unless the server reports it', () => {
-    status.current = { available: true, claudeCli: false, routes: ['gateway'] };
+    status.current = { available: true, reachable: true, claudeCli: false, routes: ['gateway'] };
     const html = renderPanel();
     expect(html).not.toMatch(/Claude CLI/i);
   });
 
   it('offers claude-cli when the server reports it', () => {
-    status.current = { available: true, claudeCli: true, routes: ['gateway'] };
+    status.current = { available: true, reachable: true, claudeCli: true, routes: ['gateway'] };
     const html = renderPanel();
     expect(html).toMatch(/Claude CLI/i);
+  });
+
+  it('offers the browser routes and the key field when the server serves nothing', () => {
+    // probeServer reports a reachable server with no keys and no CLI as
+    // unavailable: it can serve nothing, so a pasted key is the only way to run.
+    status.current = { available: false, reachable: true, claudeCli: false, routes: [] };
+    const html = renderPanel();
+    expect(html).toMatch(/paste your key/i);
+    expect(html).toMatch(/has no providers configured/i);
+    expect(html).not.toMatch(/not reachable/i);
+  });
+
+  it('keeps the retry link reachable while the server is up, because the probe only runs at mount', () => {
+    // If the server dies mid-session `status.available` stays stale-true, so a
+    // retry link that only appears when we believe it is down never appears.
+    status.current = { available: true, reachable: true, claudeCli: false, routes: ['gateway'] };
+    const html = renderPanel();
+    expect(html).toMatch(/Retry connection/i);
   });
 });
 
@@ -114,7 +140,7 @@ describe('SettingsPanel — live effects', () => {
   afterEach(() => { localStorage.clear(); });
 
   it('persists a healed model to the store when the route is valid but the model is not', async () => {
-    status.current = { available: false, claudeCli: false, routes: [] };
+    status.current = { available: false, reachable: false, claudeCli: false, routes: [] };
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({
       version: 1,
       route: 'gateway',
@@ -135,8 +161,30 @@ describe('SettingsPanel — live effects', () => {
     unmount();
   });
 
+  it('heals a persisted route even when the server reports zero usable routes', async () => {
+    // The heal effect used to bail on an empty route list, stranding the picker
+    // on a route nothing can run — one of the two ways into the 400-retry storm.
+    // Server mode is on (VITE_API_URL set) but the server has no keys and no CLI.
+    status.current = { available: true, reachable: true, claudeCli: false, routes: [] };
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({
+      version: 1,
+      route: 'claude-cli',
+      model: 'cli-opus',
+      apiKeys: { anthropic: '', google: '', openai: '', gateway: '' },
+      batchSize: 8,
+      prompts: { ocr: '', general: '', headers: '', punctuation: '', custom: '' },
+    }));
+
+    const { getInfo, unmount } = await mountLive();
+
+    expect(getInfo().settings.route).toBe('anthropic');
+    expect(getInfo().settings.model).toBe('claude-fable-5');
+
+    unmount();
+  });
+
   it('recomputes the route-unavailable notice from data at render time instead of freezing translated text', async () => {
-    status.current = { available: false, claudeCli: false, routes: [] };
+    status.current = { available: false, reachable: false, claudeCli: false, routes: [] };
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify({
       version: 1,
       route: 'claude-cli', // not offered in browser-direct mode -> triggers the fallback

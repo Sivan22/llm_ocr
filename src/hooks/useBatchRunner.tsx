@@ -4,6 +4,7 @@ import { useSettings } from '../store/SettingsContext';
 import { useI18n } from '../i18n/I18nContext';
 import { createModel } from '../ai/providers';
 import { effectiveConcurrency, runOcrPage } from '../ai/dispatch';
+import { isNonRetryable } from '../lib/api';
 import { useServerStatus } from '../store/ServerStatusContext';
 import { renderPageToPng } from '../pdf/render';
 import { savePageResult } from '../store/persistence';
@@ -96,13 +97,27 @@ export function BatchRunnerProvider({ children }: { children: ReactNode }) {
       work: async (n, sig) => {
         const img = await renderPageToPng(loadedDoc, n);
         savePageImage(fileHash, n, img);
-        const r = await runOcrPage({
-          settings,
-          serverAvailable: serverStatus.available,
-          imageDataUrl: img.dataUrl,
-          signal: sig,
-        });
-        return { ok: true as const, value: r };
+        try {
+          const r = await runOcrPage({
+            settings,
+            serverAvailable: serverStatus.available,
+            imageDataUrl: img.dataUrl,
+            signal: sig,
+          });
+          return { ok: true as const, value: r };
+        } catch (e) {
+          // Server mode has no equivalent of the browser-direct preflight above,
+          // so a structural 400 ("Model X is not available on route Y",
+          // "AI_GATEWAY_API_KEY is not set on the server.") used to be retried
+          // 3x with 5s/10s backoff per page — 50 pages of dead waiting and 150
+          // pointless requests. Returning {ok:false} makes runBatch treat it as
+          // terminal for that page. 5xx and network errors still throw and keep
+          // their retries.
+          if (isNonRetryable(e)) {
+            return { ok: false as const, error: e instanceof Error ? e.message : String(e) };
+          }
+          throw e;
+        }
       },
       onProgress: (e) => {
         processed.add(e.item);

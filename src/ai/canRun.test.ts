@@ -12,9 +12,9 @@ function settingsFor(route: Route, keys: Partial<Settings['apiKeys']> = {}): Set
   };
 }
 
-const OFFLINE: ServerStatus = { available: false, claudeCli: false, routes: [] };
+const OFFLINE: ServerStatus = { available: false, reachable: false, claudeCli: false, routes: [] };
 function online(routes: Route[], claudeCli = false): ServerStatus {
-  return { available: true, claudeCli, routes };
+  return { available: true, reachable: true, claudeCli, routes };
 }
 
 describe('runBlocker — browser-direct (no server)', () => {

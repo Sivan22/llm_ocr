@@ -35,6 +35,9 @@ not answer, the app silently uses the in-browser path.
 Concurrency is capped at 6 in server mode (browsers allow ~6 connections per
 origin) and at 2 for the Claude CLI route (one subprocess per page).
 
+The server has no authentication and it holds the keys, so it binds `127.0.0.1`
+by default. Read the `HOST` note in `.env.example` before exposing it.
+
 See `.env.example` for the server's environment variables.
 
 ## Build

@@ -39,18 +39,24 @@ export function SettingsPanel() {
   const { settings, update, updateApiKeys, reset } = useSettings();
   const { status, probing, refresh } = useServerStatus();
   const { t } = useI18n();
-  // Data, not the rendered string — computed into text at render time below,
-  // so it re-translates live if the language changes while it's on screen.
-  const [unavailableRoute, setUnavailableRoute] = useState<Route | null>(null);
+  // The route we switched *to* after finding the saved one unavailable. Data,
+  // not the rendered string — computed into text at render time below, so it
+  // re-translates live if the language changes while it's on screen.
+  const [switchedToRoute, setSwitchedToRoute] = useState<Route | null>(null);
 
   // Memoized so a fresh array identity doesn't re-fire the fallback effect below
   // on every render.
-  const routes = useMemo<Route[]>(
-    () => (status.available
+  const routes = useMemo<Route[]>(() => {
+    const served = status.available
       ? [...status.routes, ...(status.claudeCli ? (['claude-cli'] as Route[]) : [])]
-      : BROWSER_ROUTES),
-    [status.available, status.claudeCli, status.routes],
-  );
+      : [];
+    // Never empty. A server that serves nothing used to leave this list empty,
+    // which made the heal effect below bail and strand the picker on a route
+    // nothing can run — one of the two ways into the 400-retry storm. Falling
+    // back to the browser routes is right in that state: with the server unable
+    // to serve anything, a pasted key is the only way to run at all.
+    return served.length > 0 ? served : BROWSER_ROUTES;
+  }, [status.available, status.claudeCli, status.routes]);
 
   // Guard against a persisted route or model the current server can't serve —
   // without this, resolveModelId throws mid-run. Both cases are handled in
@@ -59,11 +65,11 @@ export function SettingsPanel() {
   // is always paired with one of its own valid models), so the next render
   // finds nothing left to fix and the effect goes quiet.
   useEffect(() => {
-    if (probing || routes.length === 0) return;
+    if (probing) return;
     if (!routes.includes(settings.route)) {
       const fallback = routes[0];
       const fallbackModels = modelsForRoute(fallback);
-      setUnavailableRoute(fallback);
+      setSwitchedToRoute(fallback);
       update({
         route: fallback,
         model: fallbackModels[0] as Model,
@@ -80,8 +86,8 @@ export function SettingsPanel() {
   const models = modelsForRoute(settings.route);
   const modelValue = isRouteModelValid(settings.route, settings.model) ? settings.model : (models[0] as Model);
   const keyField = KEY_FIELD[settings.route];
-  const unavailableNoticeText = unavailableRoute
-    ? t('settings.routeUnavailable', { route: t(`route.${unavailableRoute}`) })
+  const switchedNoticeText = switchedToRoute
+    ? t('settings.routeUnavailable', { route: t(`route.${switchedToRoute}`) })
     : null;
 
   return (
@@ -95,7 +101,7 @@ export function SettingsPanel() {
               const newRoute = e.target.value as Route;
               const validModels = modelsForRoute(newRoute);
               const nextModel = validModels.includes(settings.model) ? settings.model : (validModels[0] as Model);
-              setUnavailableRoute(null);
+              setSwitchedToRoute(null);
               update({
                 route: newRoute,
                 model: nextModel,
@@ -146,17 +152,26 @@ export function SettingsPanel() {
         </div>
       ) : null}
 
-      {!status.available && API_BASE && !probing && (
-        <p className="text-xs text-amber-700">
-          {t('settings.serverOffline', { url: API_BASE })}{' '}
+      {/* The probe runs once, at mount. If the server dies mid-session `status`
+          stays stale-true, so the retry link has to be reachable whenever a
+          server is configured — not only while we believe it is down. */}
+      {API_BASE && !probing && (
+        <p className={status.available ? 'text-xs text-gray-500' : 'text-xs text-amber-700'}>
+          {!status.available && (
+            <>
+              {status.reachable
+                ? t('settings.serverNoProviders', { url: API_BASE })
+                : t('settings.serverOffline', { url: API_BASE })}{' '}
+            </>
+          )}
           <button type="button" className="underline" onClick={refresh}>
             {t('settings.serverRetry')}
           </button>
         </p>
       )}
 
-      {unavailableNoticeText && (
-        <p className="text-xs text-amber-700">{unavailableNoticeText}</p>
+      {switchedNoticeText && (
+        <p className="text-xs text-amber-700">{switchedNoticeText}</p>
       )}
 
       <div>

@@ -32,6 +32,7 @@ const en: Dict = {
   'settings.reset': 'Reset all settings to defaults',
   'settings.serverManaged': 'Keys are held by the server at {url} — nothing is stored in this browser.',
   'settings.serverOffline': 'Server not reachable at {url}. Using in-browser calls with your own key.',
+  'settings.serverNoProviders': 'The server at {url} has no providers configured. Using in-browser calls with your own key.',
   'settings.serverRetry': 'Retry connection',
   'settings.routeUnavailable': 'The saved provider is not available on this server; switched to {route}.',
 
@@ -223,6 +224,7 @@ const he: Dict = {
   'settings.reset': 'אפס את כל ההגדרות לברירת מחדל',
   'settings.serverManaged': 'המפתחות נשמרים בשרת בכתובת {url} — דבר אינו נשמר בדפדפן זה.',
   'settings.serverOffline': 'השרת בכתובת {url} אינו זמין. הקריאות מתבצעות מהדפדפן עם המפתח שלך.',
+  'settings.serverNoProviders': 'בשרת בכתובת {url} לא מוגדרים ספקים. הקריאות מתבצעות מהדפדפן עם המפתח שלך.',
   'settings.serverRetry': 'נסה להתחבר שוב',
   'settings.routeUnavailable': 'הספק השמור אינו זמין בשרת זה; הוחלף ל-{route}.',
 
