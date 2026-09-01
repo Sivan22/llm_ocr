@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { useProject } from '../store/ProjectContext';
 import { useSettings } from '../store/SettingsContext';
 import { useI18n } from '../i18n/I18nContext';
-import { createModel, hasApiKey } from '../ai/providers';
-import { correctPage } from '../ai/correct';
+import { hasApiKey } from '../ai/providers';
+import { runCorrectPage } from '../ai/dispatch';
+import { useServerStatus } from '../store/ServerStatusContext';
 import { renderPageToPng } from '../pdf/render';
 import { substitute } from '../runner/prompt';
 import { savePageResult } from '../store/persistence';
@@ -19,6 +20,7 @@ const MODES: FixMode[] = ['general', 'headers', 'punctuation', 'custom'];
 export function FixPanel() {
   const { settings } = useSettings();
   const { t, lang } = useI18n();
+  const { status: serverStatus } = useServerStatus();
   const {
     loadedDoc, fileHash, currentPageNum, pages, setPage,
     corrections, setCorrections,
@@ -57,11 +59,16 @@ export function FixPanel() {
     setRunning(true);
     setStatus(t('fix.runningStatus'));
     try {
-      const model = createModel(settings);
       const img = await renderPageToPng(loadedDoc, currentPageNum);
       savePageImage(fileHash, currentPageNum, img);
       const filled = substitute(prompt, { text: page.text });
-      const { corrections: result, tokensIn, tokensOut } = await correctPage(model, img.dataUrl, filled, lang);
+      const { corrections: result, tokensIn, tokensOut } = await runCorrectPage({
+        settings,
+        serverAvailable: serverStatus.available,
+        imageDataUrl: img.dataUrl,
+        filledPrompt: filled,
+        lang,
+      });
       setCorrections((prev) => [...prev, ...result]);
       if (result.length > 0) setPromptOpen(false);
       if ((tokensIn ?? 0) > 0 || (tokensOut ?? 0) > 0) {

@@ -2,8 +2,8 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import { useProject } from '../store/ProjectContext';
 import { useSettings } from '../store/SettingsContext';
 import { useI18n } from '../i18n/I18nContext';
-import { createModel } from '../ai/providers';
-import { ocrPage } from '../ai/ocr';
+import { effectiveConcurrency, runOcrPage } from '../ai/dispatch';
+import { useServerStatus } from '../store/ServerStatusContext';
 import { renderPageToPng } from '../pdf/render';
 import { savePageResult } from '../store/persistence';
 import { savePageImage } from '../store/pageImagesStore';
@@ -24,6 +24,7 @@ const Ctx = createContext<BatchRunnerApi | null>(null);
 export function BatchRunnerProvider({ children }: { children: ReactNode }) {
   const { settings } = useSettings();
   const { t } = useI18n();
+  const { status: serverStatus } = useServerStatus();
   const { loadedDoc, fileHash, pages, pageOrder, setPageStatus, setPage, selectedPages } = useProject();
   const [running, setRunning] = useState(false);
   const [log, setLog] = useState<string[]>([]);
@@ -69,24 +70,23 @@ export function BatchRunnerProvider({ children }: { children: ReactNode }) {
 
   const start = async (pageNums: number[]) => {
     if (!loadedDoc || pageNums.length === 0 || running) return;
-    let model;
-    try { model = createModel(settings); }
-    catch (e) {
-      append(t('batch.errorPrefix', { msg: e instanceof Error ? e.message : String(e) }));
-      return;
-    }
     setRunning(true);
     abortRef.current = new AbortController();
     const processed = new Set<number>();
     for (const n of pageNums) setPageStatus(n, 'running');
     await runBatch({
       items: pageNums,
-      concurrency: settings.batchSize,
+      concurrency: effectiveConcurrency(settings.batchSize, settings.route, serverStatus.available),
       signal: abortRef.current.signal,
       work: async (n, sig) => {
         const img = await renderPageToPng(loadedDoc, n);
         savePageImage(fileHash, n, img);
-        const r = await ocrPage(model, img.dataUrl, settings.prompts.ocr, sig);
+        const r = await runOcrPage({
+          settings,
+          serverAvailable: serverStatus.available,
+          imageDataUrl: img.dataUrl,
+          signal: sig,
+        });
         return { ok: true as const, value: r };
       },
       onProgress: (e) => {
