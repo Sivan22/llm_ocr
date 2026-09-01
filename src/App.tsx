@@ -4,6 +4,7 @@ import { TooltipProvider } from './components/ui/tooltip';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { I18nProvider, useI18n } from './i18n/I18nContext';
 import { SettingsProvider } from './store/SettingsContext';
+import { ServerStatusProvider } from './store/ServerStatusContext';
 import { ProjectProvider, useProject } from './store/ProjectContext';
 import { EditorView } from './components/EditorView';
 import { ExportPanel } from './components/ExportPanel';
@@ -100,11 +101,13 @@ export default function App() {
     <I18nProvider>
       <ErrorBoundary>
         <SettingsProvider>
-          <ProjectProvider>
-            <TooltipProvider delayDuration={200}>
-              <AppShell />
-            </TooltipProvider>
-          </ProjectProvider>
+          <ServerStatusProvider>
+            <ProjectProvider>
+              <TooltipProvider delayDuration={200}>
+                <AppShell />
+              </TooltipProvider>
+            </ProjectProvider>
+          </ServerStatusProvider>
         </SettingsProvider>
       </ErrorBoundary>
     </I18nProvider>
