@@ -1,10 +1,15 @@
 # llm_ocr_web
 
-Static, browser-based app that OCRs Hebrew/Jewish texts using vision LLMs
-(Anthropic, Google, OpenAI, Vercel AI Gateway), provides a side-by-side
-image + text editor with LLM-driven proofread suggestions as accept/reject
-diff cards, and exports the result as DOCX.
+Browser-based app that OCRs Hebrew/Jewish texts using vision LLMs (Anthropic,
+Google, OpenAI, Vercel AI Gateway), provides a side-by-side image + text editor
+with LLM-driven proofread suggestions as accept/reject diff cards, and exports
+the result as DOCX.
 
+It runs as a pure static site by default: you paste your own API key and every
+call goes straight from the browser to the provider. An optional local server
+(see [Server mode](#server-mode-optional)) keeps the keys off the browser and
+adds a **Claude CLI** route that OCRs pages through your local `claude`
+subscription instead of billing per token.
 
 ## Run locally
 
@@ -22,8 +27,15 @@ Running the optional server instead keeps the keys off the browser and unlocks
 the **Claude CLI** route, which OCRs pages through your local `claude`
 subscription at no per-token cost.
 
+Both processes stay in the foreground, so run them in **two terminals**:
+
 ```bash
-cd server && npm install && npm run dev   # :3102
+# terminal 1 — the API server on :3102
+cd server && npm install && npm run dev
+```
+
+```bash
+# terminal 2 — the app, pointed at it
 VITE_API_URL=http://localhost:3102 npm run dev
 ```
 
@@ -49,14 +61,18 @@ npm run build
 ## Test
 
 ```bash
-npm test
+npm test              # client
+cd server && npm test # server
 ```
 
 ## Deploy to GitHub Pages
 
 The workflow at `.github/workflows/deploy.yml` builds with
-`VITE_BASE=/llm_ocr_web/` and publishes `dist/` on every push to `main` or
+`VITE_BASE=/llm_ocr/` and publishes `dist/` on every push to `main` or
 `master`. Set GitHub Pages source to "GitHub Actions" in repo settings.
+
+`VITE_API_URL` is unset in CI, so the published site keeps the browser-direct
+behaviour — the server is a local-only option and is never part of the deploy.
 
 ## Licence
 MIT
