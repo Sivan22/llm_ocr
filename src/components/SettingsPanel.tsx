@@ -39,7 +39,9 @@ export function SettingsPanel() {
   const { settings, update, updateApiKeys, reset } = useSettings();
   const { status, probing, refresh } = useServerStatus();
   const { t } = useI18n();
-  const [unavailableNotice, setUnavailableNotice] = useState<string | null>(null);
+  // Data, not the rendered string — computed into text at render time below,
+  // so it re-translates live if the language changes while it's on screen.
+  const [unavailableRoute, setUnavailableRoute] = useState<Route | null>(null);
 
   // Memoized so a fresh array identity doesn't re-fire the fallback effect below
   // on every render.
@@ -50,23 +52,37 @@ export function SettingsPanel() {
     [status.available, status.claudeCli, status.routes],
   );
 
-  // Guard against a persisted route the current server can't serve — without
-  // this, resolveModelId throws mid-run.
+  // Guard against a persisted route or model the current server can't serve —
+  // without this, resolveModelId throws mid-run. Both cases are handled in
+  // one effect so they can't race or loop each other: whichever branch
+  // applies, the patch it writes is internally consistent (a fallback route
+  // is always paired with one of its own valid models), so the next render
+  // finds nothing left to fix and the effect goes quiet.
   useEffect(() => {
-    if (probing || routes.length === 0 || routes.includes(settings.route)) return;
-    const fallback = routes[0];
-    const models = modelsForRoute(fallback);
-    setUnavailableNotice(t('settings.routeUnavailable', { route: t(`route.${fallback}`) }));
-    update({
-      route: fallback,
-      model: models[0] as Model,
-      batchSize: PROVIDER_BATCH_DEFAULTS[fallback],
-    });
-  }, [probing, routes, settings.route, update]);
+    if (probing || routes.length === 0) return;
+    if (!routes.includes(settings.route)) {
+      const fallback = routes[0];
+      const fallbackModels = modelsForRoute(fallback);
+      setUnavailableRoute(fallback);
+      update({
+        route: fallback,
+        model: fallbackModels[0] as Model,
+        batchSize: PROVIDER_BATCH_DEFAULTS[fallback],
+      });
+      return;
+    }
+    if (!isRouteModelValid(settings.route, settings.model)) {
+      const validModels = modelsForRoute(settings.route);
+      update({ model: validModels[0] as Model });
+    }
+  }, [probing, routes, settings.route, settings.model, update]);
 
   const models = modelsForRoute(settings.route);
   const modelValue = isRouteModelValid(settings.route, settings.model) ? settings.model : (models[0] as Model);
   const keyField = KEY_FIELD[settings.route];
+  const unavailableNoticeText = unavailableRoute
+    ? t('settings.routeUnavailable', { route: t(`route.${unavailableRoute}`) })
+    : null;
 
   return (
     <div className="space-y-6">
@@ -79,7 +95,7 @@ export function SettingsPanel() {
               const newRoute = e.target.value as Route;
               const validModels = modelsForRoute(newRoute);
               const nextModel = validModels.includes(settings.model) ? settings.model : (validModels[0] as Model);
-              setUnavailableNotice(null);
+              setUnavailableRoute(null);
               update({
                 route: newRoute,
                 model: nextModel,
@@ -139,8 +155,8 @@ export function SettingsPanel() {
         </p>
       )}
 
-      {unavailableNotice && (
-        <p className="text-xs text-amber-700">{unavailableNotice}</p>
+      {unavailableNoticeText && (
+        <p className="text-xs text-amber-700">{unavailableNoticeText}</p>
       )}
 
       <div>
