@@ -58,9 +58,42 @@ export async function getClaudeCodeProvider(): Promise<ClaudeCodeFactory> {
   return claudeCodeProvider;
 }
 
-/** Subprocess env for the CLI. See CLAUDE_CODE_MAX_OUTPUT_TOKENS note above. */
-export function claudeCliEnv(): Record<string, string> {
-  return {
+/**
+ * Auth variables the `claude` subprocess must never inherit.
+ *
+ * The provider builds the child environment from an allowlist of `process.env`
+ * *by prefix* — INHERITED_ENV_PREFIXES = ["ANTHROPIC_", "CLAUDE_", "AWS_",
+ * "GOOGLE_"] — and then merges `settings.env` on top. So a repo `.env` carrying
+ * ANTHROPIC_API_KEY (which .env.example explicitly invites, because it is what
+ * enables the `anthropic` route) would reach the CLI and make it authenticate
+ * with that API key instead of the Pro/Max subscription. The billing would be
+ * invisible: the UI calls this route subscription-billed, shows the cost chip as
+ * `∞`, and shared/ai/pricing.ts rates every `cli-*` model at zero.
+ */
+const SUPPRESSED_AUTH_VARS = [
+  'ANTHROPIC_API_KEY',
+  'ANTHROPIC_AUTH_TOKEN',
+  'ANTHROPIC_BASE_URL',
+] as const;
+
+/**
+ * Subprocess env for the CLI. See CLAUDE_CODE_MAX_OUTPUT_TOKENS note above.
+ *
+ * `undefined` — not `''` — is what actually suppresses a variable. The provider
+ * merges by object spread (`{ ...base, ...settings.env }`), so an explicit
+ * `undefined` overwrites the inherited value, and Node's child_process drops
+ * entries whose value is `undefined` when it builds the child's envPairs, so the
+ * variable is genuinely absent in the subprocess. An empty string would survive
+ * the spread and be handed to the child as `ANTHROPIC_API_KEY=`, which is present
+ * (just empty) — a weaker guarantee that depends on the CLI's own truthiness
+ * checks. The provider's own typing documents the same mechanism:
+ * `env?: Record<string, string | undefined>` … "set a key to `undefined` to
+ * remove it".
+ */
+export function claudeCliEnv(): Record<string, string | undefined> {
+  const env: Record<string, string | undefined> = {
     CLAUDE_CODE_MAX_OUTPUT_TOKENS: process.env.CLAUDE_CODE_MAX_OUTPUT_TOKENS || '64000',
   };
+  for (const name of SUPPRESSED_AUTH_VARS) env[name] = undefined;
+  return env;
 }

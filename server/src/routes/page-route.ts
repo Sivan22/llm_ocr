@@ -1,12 +1,41 @@
 import type { Context } from 'hono';
+import { bodyLimit } from 'hono/body-limit';
 import { z } from 'zod';
 import type { LanguageModel } from 'ai';
 import type { Model, Route } from '../../../shared/ai/types.js';
 import { isRouteModelValid } from '../../../shared/ai/models.js';
 import { createServerModel } from '../ai/providers.js';
 
+/**
+ * Compile-time tie to the shared `Route` union. `satisfies Record<Route, true>`
+ * fails to compile if a route is added to shared/ai/types.ts and not listed
+ * here — without it, a new route would just 400 at runtime with no build error.
+ */
+const ROUTE_KEYS = {
+  anthropic: true,
+  google: true,
+  openai: true,
+  gateway: true,
+  'claude-cli': true,
+} satisfies Record<Route, true>;
+
+const ROUTE_VALUES = Object.keys(ROUTE_KEYS) as [Route, ...Route[]];
+
+/** Base64 of a max-size image is 15 MB; leave room for the JSON envelope. */
+export const MAX_BODY_BYTES = 20_000_000;
+
+/**
+ * `c.req.json()` buffers the whole body before zod's per-field caps can apply,
+ * so without this a single huge POST OOMs the process. Rejects with a clean 413
+ * (a Response, not a thrown HTTPException) rather than crashing.
+ */
+export const pageBodyLimit = bodyLimit({
+  maxSize: MAX_BODY_BYTES,
+  onError: (c) => c.json({ error: `Request body exceeds ${MAX_BODY_BYTES} bytes.` }, 413),
+});
+
 export const pageRequestSchema = z.object({
-  route: z.enum(['anthropic', 'google', 'openai', 'gateway', 'claude-cli']),
+  route: z.enum(ROUTE_VALUES),
   model: z.string().min(1),
   // Raw base64, no data: prefix. Capped to bound request memory.
   image: z.string().min(1).max(15_000_000),

@@ -9,6 +9,7 @@ vi.mock('../../../shared/ai/ocr.js', () => ({
 }));
 
 import { ocrRoutes } from './ocr.js';
+import { MAX_BODY_BYTES } from './page-route.js';
 import { ocrPage } from '../../../shared/ai/ocr.js';
 
 const body = {
@@ -73,7 +74,7 @@ describe('POST /api/ocr', () => {
     expect(((await res.json()) as { error: string }).error).toMatch(/upstream exploded/);
   });
 
-  it('forwards the client abort signal to the AI call unchanged, so a stopped run cancels in flight work', async () => {
+  it('forwards the client abort signal to the AI call, so a stopped run cancels in flight work', async () => {
     const controller = new AbortController();
     const req = new Request('http://localhost/', {
       method: 'POST',
@@ -82,8 +83,31 @@ describe('POST /api/ocr', () => {
       signal: controller.signal,
     });
     // Passing a single Request to Hono's .request() forwards it unwrapped, so
-    // req.signal is exactly what the route handler sees as c.req.raw.signal.
+    // c.req.raw.signal descends from req.signal. Identity is asserted by
+    // propagation rather than `toBe`: the bodyLimit middleware rebuilds the
+    // request (`new Request(c.req.raw, { body })`), and per the fetch spec the
+    // rebuilt request gets a *new* AbortSignal that follows the original. The
+    // link in the Stop chain is the propagation, not the object identity.
     await ocrRoutes.request(req);
-    expect(vi.mocked(ocrPage).mock.calls[0][3]).toBe(req.signal);
+    const forwarded = vi.mocked(ocrPage).mock.calls[0][3];
+    expect(forwarded).toBeInstanceOf(AbortSignal);
+    expect(forwarded?.aborted).toBe(false);
+    controller.abort();
+    expect(forwarded?.aborted).toBe(true);
+  });
+
+  it('rejects an oversized body with 413 before it is buffered into JSON', async () => {
+    // c.req.json() buffers the whole body before zod's 15MB field cap can apply,
+    // so the limit has to sit in front of the handler.
+    const res = await post({ ...body, image: 'a'.repeat(MAX_BODY_BYTES + 1) });
+    expect(res.status).toBe(413);
+    expect(((await res.json()) as { error: string }).error).toMatch(/too large|exceeds/i);
+  });
+
+  it('still accepts a legitimate max-size page image', async () => {
+    // The zod field cap is 15MB of base64; the body cap must leave room for the
+    // JSON envelope around it, or a real max-size page would 413.
+    const res = await post({ ...body, image: 'a'.repeat(15_000_000) });
+    expect(res.status).toBe(200);
   });
 });
